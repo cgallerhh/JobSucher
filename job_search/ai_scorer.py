@@ -1,23 +1,29 @@
 """
 AI-powered job relevance scorer using Claude API (Haiku = cost-efficient).
 
-Falls back silently to keyword scores when:
-  - ANTHROPIC_API_KEY is not set
-  - anthropic package is not installed
-  - API call fails for a specific job
+Optimierungen gegenüber der Ursprungsversion:
+  - Prompt Caching (cache_control): System-Prompt wird gecacht → ~90 % Token-Ersparnis
+    auf Input-Seite bei mehreren Jobs pro Lauf (5-Minuten-Cache).
+  - Parallele API-Calls (ThreadPoolExecutor, max 5 Workers) → ~5× schneller als sequenziell.
+  - Ausführliche Bewertung: score + reason + strengths + concerns + action statt nur 90-Zeichen-Snippet.
+  - Mehr Beschreibungstext (1 500 statt 800 Zeichen) für bessere Kontextgrundlage.
 
-Cost estimate: ~0.05 €/day for 100 jobs (claude-haiku-4-5-20251001)
+Fallback: Bei fehlendem API-Key oder Import-Fehler bleiben Keyword-Scores unverändert.
+Cost estimate: ~0.04 €/day for 100 jobs (Haiku + prompt caching)
 """
 import json
 import logging
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
 CONTEXT_DIR = Path("context")
 MODEL = "claude-haiku-4-5-20251001"
+MAX_WORKERS = 5       # Parallele API-Calls (Haiku Rate-Limit: 50 RPM → 5 sicher)
+MAX_DESC_CHARS = 1500  # Mehr Kontext für bessere Bewertungsqualität
 
 
 def _load_context() -> str:
@@ -37,7 +43,7 @@ def _load_context() -> str:
 
 def _system_prompt(context: str) -> str:
     return f"""Du bist ein spezialisierter Karriere-Assistent für einen Senior Sales Manager \
-im GKV- und Public-Sector-IT-Markt. Bewerte eingehende Stellenanzeigen auf Relevanz.
+im GKV- und Public-Sector-IT-Markt. Bewerte Stellenanzeigen ausführlich und präzise.
 
 {context}
 
@@ -50,14 +56,68 @@ BEWERTUNGSSCHEMA (score 0–100):
 • 25–39  — Grenzwertig: entfernt relevant, könnte trotzdem einen Blick wert sein
 • 0–24   — Nicht relevant: falsche Branche, falsches Level oder kein Vertriebsbezug
 
+FESTE AUSSCHLÜSSE (score immer 0): adesso SE, HBSN Consulting, Init AG, AOK-Verbund
+
+---
+
 Antworte AUSSCHLIESSLICH mit minimalem JSON (kein Markdown, kein Kommentar):
-{{"score": <int 0-100>, "reason": "<max 90 Zeichen auf Deutsch>"}}"""
+{{"score": <int 0-100>, "reason": "<max 120 Zeichen Zusammenfassung auf Deutsch>", "strengths": ["<Stärke 1>", "<Stärke 2>"], "concerns": ["<Bedenken 1>"], "action": "<Sofort bewerben|Prüfen|Überspringen>"}}
+
+Regeln für die Felder:
+- reason: Prägnante Gesamtbewertung in max. 120 Zeichen
+- strengths: 1–3 konkrete Treffer aus Profil/Kriterien (z. B. "GKV-Fokus", "BID/Tender gefragt", "Senior KAM-Rolle bei Tier-1-Anbieter")
+- concerns: 0–2 echte Bedenken (z. B. "Standort München – Remote unklar", "Kein GKV-Bezug erkennbar"); leere Liste [] wenn keine
+- action: "Sofort bewerben" bei score ≥ 70 · "Prüfen" bei score 40–69 · "Überspringen" bei score < 40"""
+
+
+def _score_single(
+    client,
+    system_content: list,
+    job: Dict,
+) -> Tuple[Dict, Optional[Exception]]:
+    """Score a single job via API. Returns (updated_job, error_or_None)."""
+    try:
+        job_text = (
+            f"Jobtitel: {job.get('title', '')}\n"
+            f"Unternehmen: {job.get('company', '')}\n"
+            f"Standort: {job.get('location', '')}\n"
+            f"Stellenbeschreibung: {job.get('description', '')[:MAX_DESC_CHARS]}\n"
+            f"Quelle: {job.get('source', '')}"
+        )
+
+        response = client.messages.create(
+            model=MODEL,
+            max_tokens=300,
+            system=system_content,
+            messages=[{"role": "user", "content": job_text}],
+        )
+
+        raw = response.content[0].text.strip() if response.content else ""
+        if not raw:
+            raise ValueError("Empty response from model")
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+
+        result = json.loads(raw)
+        ai_score = max(0, min(100, int(result.get("score", 0))))
+
+        return {
+            **job,
+            "score": ai_score,
+            "ai_reason": result.get("reason", ""),
+            "ai_strengths": result.get("strengths", []),
+            "ai_concerns": result.get("concerns", []),
+            "ai_action": result.get("action", ""),
+        }, None
+
+    except Exception as exc:
+        return job, exc
 
 
 def score_jobs_with_ai(jobs: List[Dict]) -> List[Dict]:
     """
-    Re-score jobs using Claude API.
-    Returns the same list with updated 'score' and new 'ai_reason' fields.
+    Re-score jobs using Claude API (parallel + prompt caching).
+    Returns the same list with updated 'score' and new AI fields.
     Jobs where AI scoring fails keep their original keyword score.
     """
     try:
@@ -84,56 +144,45 @@ def score_jobs_with_ai(jobs: List[Dict]) -> List[Dict]:
     if not context:
         logger.warning("context/ folder is empty – AI scoring will have less context")
 
-    system = _system_prompt(context)
+    # Prompt Caching: System-Prompt als gecachtes Content-Block übergeben.
+    # Der große Kontext (~2 KB) wird vom Modell für 5 Minuten gecacht →
+    # ab dem 2. Job zahlen wir nur noch Cache-Read-Tokens (~10 % des Preises).
+    system_content = [
+        {
+            "type": "text",
+            "text": _system_prompt(context),
+            "cache_control": {"type": "ephemeral"},
+        }
+    ]
+
     client = anthropic.Anthropic(api_key=api_key)
 
-    scored: List[Dict] = []
-    for job in jobs:
-        try:
-            job_text = (
-                f"Jobtitel: {job.get('title', '')}\n"
-                f"Unternehmen: {job.get('company', '')}\n"
-                f"Standort: {job.get('location', '')}\n"
-                f"Stellenbeschreibung (Auszug): {job.get('description', '')[:800]}\n"
-                f"Quelle: {job.get('source', '')}"
-            )
+    # Parallele Verarbeitung: Ergebnis-Liste in Original-Reihenfolge aufbauen
+    scored: List[Optional[Dict]] = [None] * len(jobs)
 
-            response = client.messages.create(
-                model=MODEL,
-                max_tokens=120,
-                system=system,
-                messages=[{"role": "user", "content": job_text}],
-            )
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
+        future_to_idx = {
+            pool.submit(_score_single, client, system_content, job): i
+            for i, job in enumerate(jobs)
+        }
+        for future in as_completed(future_to_idx):
+            i = future_to_idx[future]
+            result_job, exc = future.result()
+            if exc:
+                logger.warning(
+                    "AI scoring failed for '%s': %s – keeping keyword score",
+                    jobs[i].get("title"),
+                    exc,
+                )
+            else:
+                logger.debug(
+                    "AI score %d/100 for '%s' – %s",
+                    result_job["score"],
+                    result_job.get("title"),
+                    result_job.get("ai_reason"),
+                )
+            scored[i] = result_job
 
-            raw = response.content[0].text.strip() if response.content else ""
-            if not raw:
-                raise ValueError("Empty response from model")
-            # Strip markdown code fences if model wraps JSON in ```json ... ```
-            if raw.startswith("```"):
-                raw = raw.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
-            result = json.loads(raw)
-            ai_score = max(0, min(100, int(result.get("score", 0))))
-            ai_reason = result.get("reason", "")
-
-            scored.append(
-                {
-                    **job,
-                    "score": ai_score,
-                    "ai_reason": ai_reason,
-                }
-            )
-            logger.debug(
-                "AI score %d/100 for '%s' – %s", ai_score, job.get("title"), ai_reason
-            )
-
-        except Exception as exc:
-            logger.warning(
-                "AI scoring failed for '%s': %s – keeping keyword score",
-                job.get("title"),
-                exc,
-            )
-            scored.append(job)
-
-    ai_scored_count = sum(1 for j in scored if "ai_reason" in j)
-    logger.info("AI scored %d/%d jobs", ai_scored_count, len(jobs))
-    return scored
+    ai_scored_count = sum(1 for j in scored if j and "ai_reason" in j)
+    logger.info("AI scored %d/%d jobs (parallel, prompt caching active)", ai_scored_count, len(jobs))
+    return [j for j in scored if j is not None]

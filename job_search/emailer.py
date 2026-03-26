@@ -31,6 +31,13 @@ def _score_meta(score: int):
     return "Relevant",      "#2563eb"
 
 
+_ACTION_STYLE = {
+    "Sofort bewerben": "background:#16a34a;color:#fff;",
+    "Prüfen":          "background:#d97706;color:#fff;",
+    "Überspringen":    "background:#e5e7eb;color:#6b7280;",
+}
+
+
 def _job_row(job: Dict) -> str:
     score                = job.get("score", 0)
     label, score_color   = _score_meta(score)
@@ -41,13 +48,41 @@ def _job_row(job: Dict) -> str:
     location             = job.get("location", "")
     url                  = job.get("url", "#")
     ai_reason            = job.get("ai_reason", "")
+    ai_strengths         = job.get("ai_strengths", [])
+    ai_concerns          = job.get("ai_concerns", [])
+    ai_action            = job.get("ai_action", "")
     posted               = (job.get("posted_date") or "")[:10]
 
-    ai_html = (
-        f'<div style="margin-top:5px;font-size:12px;color:#6366f1;font-style:italic;">'
-        f'&#129302; {ai_reason}</div>'
-        if ai_reason else ""
-    )
+    # AI-Bewertungsblock: Zusammenfassung + Stärken + Bedenken + Handlungsempfehlung
+    ai_parts = []
+    if ai_reason:
+        ai_parts.append(
+            f'<div style="margin-top:6px;font-size:12px;color:#6366f1;font-style:italic;">'
+            f'&#129302; {ai_reason}</div>'
+        )
+    if ai_strengths:
+        badges = "&nbsp;".join(
+            f'<span style="background:#dcfce7;color:#166534;border-radius:3px;'
+            f'padding:2px 6px;font-size:10px;font-weight:600;">&#10003; {s}</span>'
+            for s in ai_strengths
+        )
+        ai_parts.append(f'<div style="margin-top:4px;line-height:1.8;">{badges}</div>')
+    if ai_concerns:
+        badges = "&nbsp;".join(
+            f'<span style="background:#fff7ed;color:#9a3412;border-radius:3px;'
+            f'padding:2px 6px;font-size:10px;font-weight:600;">&#9888; {c}</span>'
+            for c in ai_concerns
+        )
+        ai_parts.append(f'<div style="margin-top:3px;line-height:1.8;">{badges}</div>')
+    if ai_action:
+        style = _ACTION_STYLE.get(ai_action, "background:#e5e7eb;color:#6b7280;")
+        ai_parts.append(
+            f'<div style="margin-top:5px;">'
+            f'<span style="{style}border-radius:4px;padding:2px 8px;'
+            f'font-size:10px;font-weight:700;">{ai_action}</span></div>'
+        )
+    ai_html = "\n".join(ai_parts)
+
     posted_html = (
         f'<span style="color:#9ca3af;font-size:11px;"> &middot; {posted}</span>'
         if posted else ""
