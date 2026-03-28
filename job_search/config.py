@@ -5,7 +5,7 @@ Senior Sales Manager | GKV & Public Sector IT | Hamburg
 
 PROFILE = {
     "name": "Christian Galler",
-    "email": "christian.galler@gmail.de",
+    "email": "christian.galler@gmail.com",
     "location": "Hamburg",
     "radius_km": 50,
     "remote_ok": True,
@@ -202,6 +202,7 @@ POSITIVE_KEYWORDS = {
 
 # Keywords that REDUCE score (keyword → negative points)
 NEGATIVE_KEYWORDS = {
+    "INIT AG": -100,    # ehemaliger Arbeitgeber (Übernahmepartner HBSN GmbH)
     "Zeitarbeit": -30,
     "Zeitarbeitnehmer": -30,
     "Leiharbeit": -30,
@@ -233,6 +234,8 @@ NEGATIVE_KEYWORDS = {
     "Reinigung": -40,
     "Buchhaltung": -20,
     "Steuerberater": -30,
+    "INIT AG": -100,    # ehemaliger Arbeitgeber (Übernahmepartner HBSN GmbH)
+
 }
 
 # Minimum score to include in the daily email
