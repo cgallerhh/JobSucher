@@ -1,21 +1,19 @@
 {
-  "name": "JobSucher – Indeed + Telegram",
+  "name": "JobSucher – 3 Quellen + GSheets + Gmail + Telegram",
   "nodes": [
     {
       "parameters": {
         "rule": {
           "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "0 7 * * 1-5"
-            }
+            {"field": "cronExpression", "expression": "0 7 * * 1-5"}
           ]
         }
       },
       "id": "schedule-trigger",
-      "name": "Mo–Fr 09:00",
+      "name": "Mo–Fr 07:00",
       "type": "n8n-nodes-base.scheduleTrigger",
-      "position": [240, 300]
+      "typeVersion": 1.1,
+      "position": [240, 400]
     },
     {
       "parameters": {
@@ -37,27 +35,46 @@
       "id": "set-queries",
       "name": "Suchbegriffe",
       "type": "n8n-nodes-base.set",
-      "position": [460, 300]
+      "typeVersion": 3.4,
+      "position": [460, 400]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "documentId": {"__rl": true, "value": "YOUR_SPREADSHEET_ID", "mode": "id"},
+        "sheetName": {"__rl": true, "value": "seen_jobs", "mode": "name"},
+        "options": {}
+      },
+      "id": "gsheets-read-seen",
+      "name": "GSheets Seen Jobs",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [460, 700],
+      "credentials": {
+        "googleSheetsOAuth2Api": {"id": "", "name": "Google Sheets OAuth2"}
+      }
     },
     {
       "parameters": {
         "fieldToSplitOut": "queries",
         "options": {}
       },
-      "id": "split-queries",
-      "name": "Split Queries",
+      "id": "indeed-split-q",
+      "name": "Indeed: Split Queries",
       "type": "n8n-nodes-base.splitOut",
-      "position": [680, 300]
+      "typeVersion": 1,
+      "position": [680, 200]
     },
     {
       "parameters": {
         "fieldToSplitOut": "locations",
         "options": {}
       },
-      "id": "split-locations",
-      "name": "Split Locations",
+      "id": "indeed-split-loc",
+      "name": "Indeed: Split Locations",
       "type": "n8n-nodes-base.splitOut",
-      "position": [900, 300]
+      "typeVersion": 1,
+      "position": [900, 200]
     },
     {
       "parameters": {
@@ -65,20 +82,12 @@
         "url": "=https://de.indeed.com/rss?q={{ encodeURIComponent($json.queries) }}&l={{ encodeURIComponent($json.locations) }}&sort=date&fromage=1&format=rss",
         "options": {
           "response": {
-            "response": {
-              "responseFormat": "text"
-            }
+            "response": {"responseFormat": "text"}
           },
           "headers": {
             "parameters": [
-              {
-                "name": "User-Agent",
-                "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
-              },
-              {
-                "name": "Accept",
-                "value": "application/rss+xml, application/xml, */*"
-              }
+              {"name": "User-Agent", "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"},
+              {"name": "Accept", "value": "application/rss+xml, application/xml, */*"}
             ]
           }
         }
@@ -86,54 +95,270 @@
       "id": "indeed-rss",
       "name": "Indeed RSS",
       "type": "n8n-nodes-base.httpRequest",
-      "position": [1120, 300]
+      "typeVersion": 4.2,
+      "position": [1120, 200]
     },
     {
       "parameters": {
         "dataPropertyName": "data",
         "options": {}
       },
-      "id": "parse-xml",
-      "name": "XML parsen",
+      "id": "indeed-xml",
+      "name": "Indeed XML",
       "type": "n8n-nodes-base.xml",
-      "position": [1340, 300]
+      "typeVersion": 1,
+      "position": [1340, 200]
     },
     {
       "parameters": {
         "fieldToSplitOut": "data.rss.channel[0].item",
         "options": {}
       },
-      "id": "split-items",
-      "name": "Jobs einzeln",
+      "id": "indeed-split-items",
+      "name": "Indeed: Split Items",
       "type": "n8n-nodes-base.splitOut",
-      "position": [1560, 300]
+      "typeVersion": 1,
+      "position": [1560, 200]
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.item.json;\nconst rawUrl = (item.link && item.link[0]) || (item.guid && item.guid[0]) || '';\nconst url = rawUrl.split('?')[0];\n\n// Einfache ID aus URL\nconst id = Buffer.from(url).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);\n\nconst description = ((item.description && item.description[0]) || '')\n  .replace(/<[^>]+>/g, '')\n  .slice(0, 1500);\n\nreturn {\n  id,\n  title: (item.title && item.title[0]) || '',\n  company: (item['indeed:company'] && item['indeed:company'][0]) || '',\n  location: (item['indeed:formattedLocation'] && item['indeed:formattedLocation'][0]) ||\n            (item['indeed:city'] && item['indeed:city'][0]) || '',\n  description,\n  url,\n  posted_date: (item.pubDate && item.pubDate[0]) || '',\n  source: 'Indeed'\n};"
+        "jsCode": "const item = $input.item.json;\nconst rawUrl = (item.link && item.link[0]) || (item.guid && item.guid[0]) || '';\nconst url = rawUrl.split('?')[0];\nconst id = Buffer.from(url).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);\nconst description = ((item.description && item.description[0]) || '')\n  .replace(/<[^>]+>/g, '').slice(0, 1500);\nreturn {\n  id,\n  title: (item.title && item.title[0]) || '',\n  company: (item['indeed:company'] && item['indeed:company'][0]) || '',\n  location: (item['indeed:formattedLocation'] && item['indeed:formattedLocation'][0]) || (item['indeed:city'] && item['indeed:city'][0]) || '',\n  description,\n  url,\n  posted_date: (item.pubDate && item.pubDate[0]) || '',\n  source: 'Indeed'\n};"
       },
-      "id": "normalize-fields",
-      "name": "Felder normalisieren",
+      "id": "indeed-normalize",
+      "name": "Indeed: Normalize",
       "type": "n8n-nodes-base.code",
-      "position": [1780, 300]
+      "typeVersion": 2,
+      "position": [1780, 200]
     },
     {
       "parameters": {
-        "jsCode": "const POSITIVE = {\n  'GKV': 20, 'gesetzliche Krankenversicherung': 20,\n  'Krankenkasse': 18, 'Krankenkassen': 18,\n  'BKK': 15, 'IKK': 15, 'DAK': 15, 'AOK': 15,\n  'Public Sector': 15, 'öffentlicher Sektor': 15,\n  'Account Manager': 15, 'Sales Manager': 15,\n  'Key Account': 15, 'Business Development': 12,\n  'Vertrieb': 10, 'eHealth': 15,\n  'Gesundheitswesen': 12, 'Healthcare IT': 15,\n  'Health IT': 15, 'IT-Consulting': 12,\n  'Digital Health': 14, 'Digitalisierung': 8,\n  'Ausschreibung': 15, 'Vergabe': 12,\n  'BAFO': 15, 'Tender': 10,\n  'KRITIS': 12, 'NIS2': 12, 'SGB V': 15,\n  'Telematikinfrastruktur': 12, 'TI 2.0': 12,\n  'BITMARCK': 15, 'Senior': 8,\n  'Director': 5, 'Head of': 5,\n  'Hamburg': 5, 'Remote': 5, 'Hybrid': 5,\n  'msg': 8, 'adesso': 8, 'Sopra Steria': 8,\n  'Capgemini': 8, 'T-Systems': 8, 'CGI': 8,\n  'Leiter Digital': 22, 'CDO': 15,\n  'Chief Digital Officer': 22\n};\n\nconst NEGATIVE = {\n  'Zeitarbeit': -30, 'Werkstudent': -40,\n  'Praktikum': -40, 'Junior': -25,\n  'Pflegekraft': -40, 'Arzt': -40,\n  'Medizin': -20, 'Produktion': -30,\n  'Logistik': -20, 'Fahrer': -35,\n  'Minijob': -40, 'Trainee': -20,\n  'INIT AG': -100, 'adesso SE': -100\n};\n\nconst item = $input.item.json;\nif (!item.title) return null;\n\nconst text = [item.title, item.description, item.company, item.location]\n  .join(' ').toLowerCase();\n\nlet score = 0;\nfor (const [kw, pts] of Object.entries(POSITIVE)) {\n  if (text.includes(kw.toLowerCase())) score += pts;\n}\nfor (const [kw, pen] of Object.entries(NEGATIVE)) {\n  if (text.includes(kw.toLowerCase())) score += pen;\n}\nscore = Math.max(0, Math.min(100, score));\n\nif (score < 25) return null;\n\nreturn { ...$input.item.json, keyword_score: score, score };"
+        "fieldToSplitOut": "queries",
+        "options": {}
+      },
+      "id": "ba-split-q",
+      "name": "BA: Split Queries",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [680, 500]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {"name": "was", "value": "={{ $json.queries }}"},
+            {"name": "wo", "value": "Deutschland"},
+            {"name": "umkreis", "value": "200"},
+            {"name": "veroeffentlichtseit", "value": "3"},
+            {"name": "size", "value": "25"}
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "X-API-Key", "value": "jobboerse-jobsuche"}
+          ]
+        },
+        "options": {}
+      },
+      "id": "ba-api",
+      "name": "Arbeitsagentur API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 500]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "stellenangebote",
+        "options": {}
+      },
+      "id": "ba-split-items",
+      "name": "BA: Split Items",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [1120, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "const job = $input.item.json;\nconst refnr = job.refnr || '';\nconst url = job.externeUrl || ('https://www.arbeitsagentur.de/jobsuche/jobdetail/' + refnr);\nconst id = Buffer.from(refnr || url).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);\nreturn {\n  id,\n  title: job.beruf || job.stellenbezeichnung || '',\n  company: job.arbeitgeber || '',\n  location: (job.arbeitsort && (job.arbeitsort.ort || job.arbeitsort.region)) || '',\n  description: (job.stellenbeschreibung || job.kurzbeschreibung || '').slice(0, 1500),\n  url,\n  posted_date: job.eintrittsdatum || job.aktuelleVeroeffentlichungsdatum || '',\n  source: 'Arbeitsagentur'\n};"
+      },
+      "id": "ba-normalize",
+      "name": "BA: Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 500]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "queries",
+        "options": {}
+      },
+      "id": "li-split-q",
+      "name": "LinkedIn: Split Queries",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [680, 800]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "locations",
+        "options": {}
+      },
+      "id": "li-split-loc",
+      "name": "LinkedIn: Split Locations",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [900, 800]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkdapi.com/v2/jobs/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Authorization", "value": "=Bearer {{ $credentials.httpHeaderAuth.value }}"},
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"keyword\": \"{{ $json.queries }}\",\n  \"location\": \"{{ $json.locations === 'Deutschland' ? 'Germany' : $json.locations + ', Germany' }}\",\n  \"experience\": [\"mid_senior\", \"director\"],\n  \"datePosted\": \"past24Hours\",\n  \"limit\": 25\n}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "li-api",
+      "name": "linkdAPI Jobs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 800],
+      "credentials": {
+        "httpHeaderAuth": {"id": "", "name": "linkdAPI Key"}
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = $input.item.json;\nconst jobs = result.jobs || result.data || result.items || (Array.isArray(result) ? result : []);\nreturn { jobs };"
+      },
+      "id": "li-fix-response",
+      "name": "LI: Fix Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 800]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "jobs",
+        "options": {}
+      },
+      "id": "li-split-items",
+      "name": "LI: Split Items",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [1560, 800]
+    },
+    {
+      "parameters": {
+        "jsCode": "const job = $input.item.json;\nconst rawUrl = job.jobUrl || job.url || job.applyUrl || job.link || '';\nconst url = rawUrl.split('?')[0];\nconst id = Buffer.from(url || job.id || '').toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);\nconst company = (job.company && (job.company.name || job.company)) || job.companyName || '';\nreturn {\n  id,\n  title: job.title || job.jobTitle || '',\n  company,\n  location: job.location || job.formattedLocation || job.city || '',\n  description: (job.description || job.shortDescription || job.snippet || '').slice(0, 1500),\n  url,\n  posted_date: job.listedAt || job.postedAt || job.datePosted || '',\n  source: 'LinkedIn'\n};"
+      },
+      "id": "li-normalize",
+      "name": "LI: Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 800]
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "options": {}
+      },
+      "id": "merge-sources",
+      "name": "Merge 3 Quellen",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [2000, 500]
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "options": {}
+      },
+      "id": "merge-with-sheets",
+      "name": "Merge + GSheets Dedup",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [2220, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "const all = $input.all();\n// GSheets rows haben job_id; Job-Items haben source-Feld\nconst seen = new Set(\n  all.filter(i => !i.json.source && i.json.job_id).map(i => String(i.json.job_id))\n);\nconst inRun = new Set();\nconst result = [];\nfor (const item of all) {\n  const {source, id} = item.json;\n  if (!source || !id) continue;  // GSheets-Zeilen überspringen\n  if (seen.has(id) || inRun.has(id)) continue;  // Duplikate entfernen\n  inRun.add(id);\n  result.push(item);\n}\nresult.sort((a, b) => (a.json.title || '').localeCompare(b.json.title || ''));\nreturn result;"
+      },
+      "id": "dedup-filter",
+      "name": "Dedup Filter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2440, 500]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {"__rl": true, "value": "YOUR_SPREADSHEET_ID", "mode": "id"},
+        "sheetName": {"__rl": true, "value": "seen_jobs", "mode": "name"},
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "job_id": "={{ $json.id }}",
+            "title": "={{ $json.title }}",
+            "company": "={{ $json.company }}",
+            "score": "=0",
+            "source": "={{ $json.source }}",
+            "date_seen": "={{ $now.toFormat('yyyy-MM-dd') }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "gsheets-append-all",
+      "name": "GSheets: Neue Jobs merken",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [2660, 700],
+      "credentials": {
+        "googleSheetsOAuth2Api": {"id": "", "name": "Google Sheets OAuth2"}
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const POSITIVE = {'GKV': 20, 'gesetzliche Krankenversicherung': 20, 'Krankenkasse': 18, 'Krankenkassen': 18, 'BKK': 15, 'IKK': 15, 'DAK': 15, 'AOK': 15, 'Public Sector': 15, 'offentlicher Sektor': 10, 'Account Manager': 15, 'Sales Manager': 15, 'Key Account': 15, 'Business Development': 12, 'Vertrieb': 10, 'eHealth': 15, 'Gesundheitswesen': 12, 'Healthcare IT': 15, 'Health IT': 15, 'IT-Consulting': 12, 'Digital Health': 14, 'Digitalisierung': 8, 'Ausschreibung': 15, 'Vergabe': 12, 'BAFO': 15, 'Tender': 10, 'KRITIS': 12, 'NIS2': 12, 'SGB V': 15, 'TI 2.0': 12, 'Telematikinfrastruktur': 12, 'BITMARCK': 15, 'Senior': 8, 'Director': 5, 'Head of': 5, 'Hamburg': 5, 'Remote': 5, 'Hybrid': 5, 'CDO': 15, 'Chief Digital Officer': 22, 'Leiter Digital': 22, 'msg': 8, 'Sopra Steria': 8, 'Capgemini': 8, 'T-Systems': 8, 'CGI': 8, 'Leiter Vertrieb': 20, 'Leiter Innovation': 20, 'Leiter Einkauf': 20};\nconst NEGATIVE = {'INIT AG': -100, 'adesso SE': -100, 'Zeitarbeit': -30, 'Werkstudent': -40, 'Praktikum': -40, 'Trainee': -20, 'Junior': -25, 'Berufseinsteiger': -30, 'Minijob': -40, 'Pflegekraft': -40, 'Pflegefachkraft': -40, 'Arzt': -40, 'Medizin': -20, 'Produktion': -30, 'Logistik': -20, 'Fahrer': -35, 'Hausmeister': -40, 'Reinigung': -40};\nconst item = $input.item.json;\nif (!item.title) return null;\nconst text = [item.title, item.description || '', item.company || '', item.location || ''].join(' ').toLowerCase();\nlet score = 0;\nfor (const [kw, pts] of Object.entries(POSITIVE)) { if (text.includes(kw.toLowerCase())) score += pts; }\nfor (const [kw, pen] of Object.entries(NEGATIVE)) { if (text.includes(kw.toLowerCase())) score += pen; }\nreturn {...$input.item.json, keyword_score: Math.max(0, Math.min(100, score))};"
       },
       "id": "keyword-scoring",
       "name": "Keyword Scoring",
       "type": "n8n-nodes-base.code",
-      "position": [2000, 300]
+      "typeVersion": 2,
+      "position": [2660, 400]
     },
     {
       "parameters": {
-        "jsCode": "// Duplikate innerhalb dieses Laufs entfernen\nconst seen = new Set();\nconst items = $input.all();\nconst result = [];\nfor (const item of items) {\n  if (!item.json || !item.json.id) continue;\n  if (seen.has(item.json.id)) continue;\n  seen.add(item.json.id);\n  result.push(item);\n}\n// Nach Score sortieren\nresult.sort((a, b) => (b.json.score || 0) - (a.json.score || 0));\n// Maximal 10 Jobs pro Lauf\nreturn result.slice(0, 10);"
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [
+            {
+              "leftValue": "={{ $json.keyword_score }}",
+              "rightValue": 25,
+              "operator": {"type": "number", "operation": "gte"}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
       },
-      "id": "dedup-sort",
-      "name": "Dedup + Sortieren",
-      "type": "n8n-nodes-base.code",
-      "position": [2220, 300]
+      "id": "filter-kw",
+      "name": "Score >= 25 (Keyword)?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [2880, 400]
     },
     {
       "parameters": {
@@ -144,125 +369,221 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "anthropic-version",
-              "value": "2023-06-01"
-            },
-            {
-              "name": "anthropic-beta",
-              "value": "prompt-caching-2024-07-31"
-            }
+            {"name": "anthropic-version", "value": "2023-06-01"},
+            {"name": "anthropic-beta", "value": "prompt-caching-2024-07-31"}
           ]
         },
         "sendBody": true,
-        "bodyParameters": {
-          "parameters": []
-        },
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5-20251001\",\n  \"max_tokens\": 300,\n  \"system\": [\n    {\n      \"type\": \"text\",\n      \"text\": \"Du bist ein Karriere-Assistent für Senior Sales Manager Christian Galler (GKV & Public Sector IT, Hamburg, 30+ Jahre Erfahrung). Bewerte Stellenanzeigen.\\n\\nBEWERTUNGSSCHEMA (0-100):\\n- 80-100: Perfekter Match (Sales + GKV + Senior)\\n- 60-79: Sehr gut (2 von 3 Kriterien)\\n- 40-59: Teilweise relevant\\n- 25-39: Grenzwertig\\n- 0-24: Nicht relevant\\n\\nAUSSCHLÜSSE (immer 0): adesso SE, HBSN, Init AG, AOK-Verbund\\n\\nAntworte NUR mit JSON:\\n{\\\"score\\\": <0-100>, \\\"reason\\\": \\\"<max 100 Zeichen>\\\", \\\"action\\\": \\\"<Sofort bewerben|Prüfen|Überspringen>\\\"}\",\n      \"cache_control\": {\"type\": \"ephemeral\"}\n    }\n  ],\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Jobtitel: {{ $json.title }}\\nUnternehmen: {{ $json.company }}\\nStandort: {{ $json.location }}\\nBeschreibung: {{ $json.description.slice(0, 1000) }}\"\n    }\n  ]\n}",
+        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5-20251001\",\n  \"max_tokens\": 300,\n  \"system\": [\n    {\n      \"type\": \"text\",\n      \"text\": \"Du bist ein Karriere-Assistent fuer Senior Sales Manager Christian Galler (GKV & Public Sector IT, Hamburg, 30+ Jahre Erfahrung).\\n\\nBEWERTUNG (0-100):\\n80-100: Perfekter Match (Sales + GKV + Senior)\\n60-79: Sehr gut\\n40-59: Teilweise relevant\\n25-39: Grenzwertig\\n0-24: Nicht relevant\\n\\nFESTE AUSSCHLUESSE (score immer 0): adesso SE, HBSN, Init AG\\n\\nAntworte NUR mit JSON: {\\\"score\\\": <0-100>, \\\"reason\\\": \\\"<max 120 Zeichen>\\\", \\\"strengths\\\": [\\\"<max 3>\\\"], \\\"concerns\\\": [\\\"<max 2>\\\"], \\\"action\\\": \\\"<Sofort bewerben|Pruefen|Ueberspringen>\\\"}\",\n      \"cache_control\": {\"type\": \"ephemeral\"}\n    }\n  ],\n  \"messages\": [{\"role\": \"user\", \"content\": \"Jobtitel: {{ $json.title }}\\nUnternehmen: {{ $json.company }}\\nStandort: {{ $json.location }}\\nQuelle: {{ $json.source }}\\nBeschreibung: {{ ($json.description || '').slice(0, 1200) }}\"}]\n}",
         "options": {}
       },
       "id": "claude-scoring",
       "name": "Claude AI Scoring",
       "type": "n8n-nodes-base.httpRequest",
-      "position": [2440, 300]
+      "typeVersion": 4.2,
+      "position": [3100, 400],
+      "credentials": {
+        "httpHeaderAuth": {"id": "", "name": "Anthropic API Key"}
+      }
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.item.json;\ntry {\n  let raw = item.content[0].text.trim();\n  if (raw.startsWith('```')) {\n    raw = raw.split('\\n').slice(1).join('\\n').replace(/```$/, '').trim();\n  }\n  const result = JSON.parse(raw);\n  const score = Math.max(0, Math.min(100, parseInt(result.score) || 0));\n  const action = result.action || '';\n  const reason = result.reason || '';\n  \n  // Emoji je Score\n  const emoji = score >= 70 ? '🟢' : score >= 40 ? '🟡' : '🔵';\n  \n  return {\n    ...item,\n    ai_score: score,\n    ai_reason: reason,\n    ai_action: action,\n    score_emoji: emoji\n  };\n} catch(e) {\n  return { ...item, ai_score: item.keyword_score || 0, ai_reason: '', ai_action: '', score_emoji: '🔵' };\n}"
+        "jsCode": "const item = $input.item.json;\ntry {\n  let raw = item.content[0].text.trim();\n  if (raw.startsWith('```')) {\n    raw = raw.split('\\n').slice(1).join('\\n').replace(/```$/, '').trim();\n  }\n  const result = JSON.parse(raw);\n  const score = Math.max(0, Math.min(100, parseInt(result.score) || 0));\n  const emoji = score >= 70 ? '\\uD83D\\uDFE2' : score >= 40 ? '\\uD83D\\uDFE1' : '\\uD83D\\uDD35';\n  return {\n    ...item,\n    ai_score: score,\n    ai_reason: result.reason || '',\n    ai_strengths: result.strengths || [],\n    ai_concerns: result.concerns || [],\n    ai_action: result.action || '',\n    score_emoji: emoji\n  };\n} catch(e) {\n  return { ...item, ai_score: item.keyword_score || 0, ai_reason: '', ai_strengths: [], ai_concerns: [], ai_action: '', score_emoji: '\\uD83D\\uDD35' };\n}"
       },
       "id": "parse-ai",
       "name": "AI Antwort parsen",
       "type": "n8n-nodes-base.code",
-      "position": [2660, 300]
+      "typeVersion": 2,
+      "position": [3320, 400]
     },
     {
       "parameters": {
         "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
           "conditions": [
             {
               "leftValue": "={{ $json.ai_score }}",
-              "rightValue": 25,
-              "operator": {
-                "type": "number",
-                "operation": "gte"
-              }
+              "rightValue": 70,
+              "operator": {"type": "number", "operation": "gte"}
             }
           ],
           "combinator": "and"
         },
         "options": {}
       },
-      "id": "filter-relevant",
-      "name": "Score >= 25?",
+      "id": "filter-telegram",
+      "name": "Score >= 70 (Telegram)?",
       "type": "n8n-nodes-base.if",
-      "position": [2880, 300]
+      "typeVersion": 2.2,
+      "position": [3540, 250]
     },
     {
       "parameters": {
-        "chatId": "DEINE_CHAT_ID",
-        "text": "={{ $json.score_emoji }} *Score {{ $json.ai_score }}/100* – {{ $json.ai_action }}\n*{{ $json.title }}*\n{{ $json.company }} · {{ $json.location }}\n\n_{{ $json.ai_reason }}_\n\n[Bewerben →]({{ $json.url }})",
+        "chatId": "8604500773",
+        "text": "={{ $json.score_emoji }} *Score {{ $json.ai_score }}/100* – {{ $json.ai_action }}\n*{{ $json.title }}*\n{{ $json.company }} · {{ $json.location }} · {{ $json.source }}\n\n_{{ $json.ai_reason }}_\n\n[Bewerben →]({{ $json.url }})",
         "additionalFields": {
           "parse_mode": "Markdown",
           "disable_web_page_preview": true
         }
       },
-      "id": "telegram-send",
-      "name": "Telegram senden",
+      "id": "telegram-push",
+      "name": "Telegram Push",
       "type": "n8n-nodes-base.telegram",
-      "position": [3100, 300]
+      "typeVersion": 1.2,
+      "position": [3760, 200],
+      "credentials": {
+        "telegramApi": {"id": "", "name": "Telegram Bot"}
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "jobs",
+        "options": {}
+      },
+      "id": "aggregate-digest",
+      "name": "Digest Aggregate",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [3540, 560]
+    },
+    {
+      "parameters": {
+        "jsCode": "const jobs = ($input.item.json.jobs || []).filter(j => (j.ai_score || 0) >= 25);\njobs.sort((a, b) => (b.ai_score || 0) - (a.ai_score || 0));\nif (jobs.length === 0) return null;\nconst today = new Date().toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit', year:'numeric'});\nconst SRC_COLORS = {'Arbeitsagentur': '#005b99', 'LinkedIn': '#0077b5', 'Indeed': '#2557a7'};\nfunction sc(s) { return s >= 70 ? '#16a34a' : s >= 50 ? '#65a30d' : s >= 35 ? '#d97706' : '#2563eb'; }\nfunction sl(s) { return s >= 70 ? 'Top' : s >= 50 ? 'Hoch' : s >= 35 ? 'Mittel' : 'Ok'; }\nconst rows = jobs.map(job => {\n  const s = job.ai_score || 0;\n  const ac = job.ai_action === 'Sofort bewerben' ? 'background:#16a34a;color:#fff' : job.ai_action === 'Pruefen' ? 'background:#d97706;color:#fff' : 'background:#e5e7eb;color:#6b7280';\n  const str = (job.ai_strengths || []).map(x => `<span style='background:#dcfce7;color:#166534;border-radius:3px;padding:2px 5px;font-size:10px'>✓ ${x}</span>`).join(' ');\n  const con = (job.ai_concerns || []).map(x => `<span style='background:#fff7ed;color:#9a3412;border-radius:3px;padding:2px 5px;font-size:10px'>⚠ ${x}</span>`).join(' ');\n  return `<tr style='border-bottom:1px solid #e5e7eb'><td style='padding:10px 8px 10px 0;vertical-align:top;white-space:nowrap;width:1%'><div style='background:${sc(s)};color:#fff;border-radius:6px;padding:4px 8px;text-align:center;min-width:48px'><div style='font-size:14px;font-weight:800'>${s}</div><div style='font-size:9px;opacity:.9'>${sl(s)}</div></div></td><td style='padding:10px 12px;vertical-align:top'><div style='font-size:14px;font-weight:700;color:#111827'>${job.title}</div><div style='font-size:12px;color:#374151;margin-top:2px'>${job.company || '—'}</div><div style='font-size:11px;color:#6b7280;margin-top:2px'>📍 ${job.location} <span style='background:${SRC_COLORS[job.source] || '#6b7280'};color:#fff;border-radius:3px;padding:1px 5px;font-size:9px'>${job.source}</span></div>${job.ai_reason ? `<div style='margin-top:5px;font-size:11px;color:#6366f1;font-style:italic'>🤖 ${job.ai_reason}</div>` : ''}${str ? `<div style='margin-top:3px'>${str}</div>` : ''}${con ? `<div style='margin-top:2px'>${con}</div>` : ''}${job.ai_action ? `<div style='margin-top:4px'><span style='${ac};border-radius:4px;padding:2px 7px;font-size:9px;font-weight:700'>${job.ai_action}</span></div>` : ''}</td><td style='padding:10px 0 10px 8px;vertical-align:middle;white-space:nowrap;width:1%'><a href='${job.url}' style='display:inline-block;background:#2563eb;color:#fff;padding:7px 12px;border-radius:6px;text-decoration:none;font-size:12px;font-weight:600'>Bewerben →</a></td></tr>`;\n}).join('');\nconst src = {}; jobs.forEach(j => { src[j.source] = (src[j.source] || 0) + 1; });\nconst srcStr = Object.entries(src).map(([s,n]) => `${s}: ${n}`).join(' · ');\nconst html = `<!DOCTYPE html><html lang='de'><head><meta charset='UTF-8'></head><body style='margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,sans-serif'><div style='max-width:680px;margin:0 auto;padding:24px 16px'><div style='background:linear-gradient(135deg,#1e3a8a,#2563eb);border-radius:14px;padding:22px 26px;margin-bottom:18px'><h1 style='margin:0 0 4px;font-size:19px;color:#fff;font-weight:800'>🔍 Deine Stellen-Übersicht — ${today}</h1><p style='margin:0;font-size:12px;color:#bfdbfe'><strong style='color:#fff'>${jobs.length} relevante Stelle${jobs.length !== 1 ? 'n' : ''}</strong> · ${srcStr}</p></div><div style='background:#fff;border-radius:12px;padding:6px 18px 2px;box-shadow:0 1px 4px rgba(0,0,0,.07);border:1px solid #e5e7eb'><table style='width:100%;border-collapse:collapse'>${rows}</table></div></div></body></html>`;\nreturn { htmlContent: html, jobCount: jobs.length, subject: `🔍 ${jobs.length} neue Stellen | ${today}` };"
+      },
+      "id": "build-email",
+      "name": "HTML Email bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3760, 560]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $credentials.user }}",
+        "toEmail": "christian.galler@gmail.com",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.htmlContent }}",
+        "options": {}
+      },
+      "id": "email-send",
+      "name": "E-Mail Digest senden",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [3980, 560],
+      "credentials": {
+        "smtp": {"id": "", "name": "Gmail SMTP"}
+      }
     }
   ],
   "connections": {
-    "Mo–Fr 09:00": {
-      "main": [[{"node": "Suchbegriffe", "type": "main", "index": 0}]]
+    "Mo–Fr 07:00": {
+      "main": [[
+        {"node": "Suchbegriffe", "type": "main", "index": 0},
+        {"node": "GSheets Seen Jobs", "type": "main", "index": 0}
+      ]]
     },
     "Suchbegriffe": {
-      "main": [[{"node": "Split Queries", "type": "main", "index": 0}]]
+      "main": [[
+        {"node": "Indeed: Split Queries", "type": "main", "index": 0},
+        {"node": "BA: Split Queries", "type": "main", "index": 0},
+        {"node": "LinkedIn: Split Queries", "type": "main", "index": 0}
+      ]]
     },
-    "Split Queries": {
-      "main": [[{"node": "Split Locations", "type": "main", "index": 0}]]
+    "Indeed: Split Queries": {
+      "main": [[{"node": "Indeed: Split Locations", "type": "main", "index": 0}]]
     },
-    "Split Locations": {
+    "Indeed: Split Locations": {
       "main": [[{"node": "Indeed RSS", "type": "main", "index": 0}]]
     },
     "Indeed RSS": {
-      "main": [[{"node": "XML parsen", "type": "main", "index": 0}]]
+      "main": [[{"node": "Indeed XML", "type": "main", "index": 0}]]
     },
-    "XML parsen": {
-      "main": [[{"node": "Jobs einzeln", "type": "main", "index": 0}]]
+    "Indeed XML": {
+      "main": [[{"node": "Indeed: Split Items", "type": "main", "index": 0}]]
     },
-    "Jobs einzeln": {
-      "main": [[{"node": "Felder normalisieren", "type": "main", "index": 0}]]
+    "Indeed: Split Items": {
+      "main": [[{"node": "Indeed: Normalize", "type": "main", "index": 0}]]
     },
-    "Felder normalisieren": {
-      "main": [[{"node": "Keyword Scoring", "type": "main", "index": 0}]]
+    "Indeed: Normalize": {
+      "main": [[{"node": "Merge 3 Quellen", "type": "main", "index": 0}]]
+    },
+    "BA: Split Queries": {
+      "main": [[{"node": "Arbeitsagentur API", "type": "main", "index": 0}]]
+    },
+    "Arbeitsagentur API": {
+      "main": [[{"node": "BA: Split Items", "type": "main", "index": 0}]]
+    },
+    "BA: Split Items": {
+      "main": [[{"node": "BA: Normalize", "type": "main", "index": 0}]]
+    },
+    "BA: Normalize": {
+      "main": [[{"node": "Merge 3 Quellen", "type": "main", "index": 1}]]
+    },
+    "LinkedIn: Split Queries": {
+      "main": [[{"node": "LinkedIn: Split Locations", "type": "main", "index": 0}]]
+    },
+    "LinkedIn: Split Locations": {
+      "main": [[{"node": "linkdAPI Jobs", "type": "main", "index": 0}]]
+    },
+    "linkdAPI Jobs": {
+      "main": [[{"node": "LI: Fix Response", "type": "main", "index": 0}]]
+    },
+    "LI: Fix Response": {
+      "main": [[{"node": "LI: Split Items", "type": "main", "index": 0}]]
+    },
+    "LI: Split Items": {
+      "main": [[{"node": "LI: Normalize", "type": "main", "index": 0}]]
+    },
+    "LI: Normalize": {
+      "main": [[{"node": "Merge 3 Quellen", "type": "main", "index": 2}]]
+    },
+    "Merge 3 Quellen": {
+      "main": [[{"node": "Merge + GSheets Dedup", "type": "main", "index": 0}]]
+    },
+    "GSheets Seen Jobs": {
+      "main": [[{"node": "Merge + GSheets Dedup", "type": "main", "index": 1}]]
+    },
+    "Merge + GSheets Dedup": {
+      "main": [[{"node": "Dedup Filter", "type": "main", "index": 0}]]
+    },
+    "Dedup Filter": {
+      "main": [[
+        {"node": "GSheets: Neue Jobs merken", "type": "main", "index": 0},
+        {"node": "Keyword Scoring", "type": "main", "index": 0}
+      ]]
     },
     "Keyword Scoring": {
-      "main": [[{"node": "Dedup + Sortieren", "type": "main", "index": 0}]]
+      "main": [[{"node": "Score >= 25 (Keyword)?", "type": "main", "index": 0}]]
     },
-    "Dedup + Sortieren": {
-      "main": [[{"node": "Claude AI Scoring", "type": "main", "index": 0}]]
+    "Score >= 25 (Keyword)?": {
+      "main": [
+        [{"node": "Claude AI Scoring", "type": "main", "index": 0}],
+        []
+      ]
     },
     "Claude AI Scoring": {
       "main": [[{"node": "AI Antwort parsen", "type": "main", "index": 0}]]
     },
     "AI Antwort parsen": {
-      "main": [[{"node": "Score >= 25?", "type": "main", "index": 0}]]
+      "main": [[
+        {"node": "Score >= 70 (Telegram)?", "type": "main", "index": 0},
+        {"node": "Digest Aggregate", "type": "main", "index": 0}
+      ]]
     },
-    "Score >= 25?": {
+    "Score >= 70 (Telegram)?": {
       "main": [
-        [{"node": "Telegram senden", "type": "main", "index": 0}],
+        [{"node": "Telegram Push", "type": "main", "index": 0}],
         []
       ]
+    },
+    "Digest Aggregate": {
+      "main": [[{"node": "HTML Email bauen", "type": "main", "index": 0}]]
+    },
+    "HTML Email bauen": {
+      "main": [[{"node": "E-Mail Digest senden", "type": "main", "index": 0}]]
     }
   },
-  "settings": {
-    "executionOrder": "v1"
-  }
+  "settings": {"executionOrder": "v1"}
 }
