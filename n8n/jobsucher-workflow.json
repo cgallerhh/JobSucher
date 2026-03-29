@@ -268,7 +268,9 @@
     {
       "parameters": {
         "fieldToSplitOut": "queries",
-        "options": {}
+        "options": {
+          "include": "allOtherFields"
+        }
       },
       "id": "li-split-q",
       "name": "LinkedIn: Split Queries",
@@ -295,22 +297,31 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://linkdapi.com/v2/jobs/search",
-        "sendHeaders": true,
-        "headerParameters": {
+        "method": "GET",
+        "url": "https://linkdapi.com/api/v1/jobs/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
           "parameters": [
             {
-              "name": "Content-Type",
-              "value": "application/json"
+              "name": "keyword",
+              "value": "={{ $json.queries }}"
+            },
+            {
+              "name": "location",
+              "value": "={{ $json.locations === 'Deutschland' ? 'Germany' : $json.locations }}"
+            },
+            {
+              "name": "timePosted",
+              "value": "past-24h"
+            },
+            {
+              "name": "start",
+              "value": "0"
             }
           ]
         },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"keyword\": \"{{ $json.queries }}\",\n  \"location\": \"{{ $json.locations === 'Deutschland' ? 'Germany' : $json.locations + ', Germany' }}\",\n  \"experience\": [\"mid_senior\", \"director\"],\n  \"datePosted\": \"past24Hours\",\n  \"limit\": 25\n}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
         "options": {}
       },
       "id": "li-api",
