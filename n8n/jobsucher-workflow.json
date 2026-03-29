@@ -41,7 +41,7 @@
     {
       "parameters": {
         "operation": "getAll",
-        "documentId": {"__rl": true, "value": "YOUR_SPREADSHEET_ID", "mode": "id"},
+        "documentId": {"__rl": true, "value": "1Qp7rnXxVMe815EhEN6t-8dcX1Rpb0r0sqiDcrTM14-I", "mode": "id"},
         "sheetName": {"__rl": true, "value": "seen_jobs", "mode": "name"},
         "options": {}
       },
@@ -305,7 +305,7 @@
     {
       "parameters": {
         "operation": "append",
-        "documentId": {"__rl": true, "value": "YOUR_SPREADSHEET_ID", "mode": "id"},
+        "documentId": {"__rl": true, "value": "1Qp7rnXxVMe815EhEN6t-8dcX1Rpb0r0sqiDcrTM14-I", "mode": "id"},
         "sheetName": {"__rl": true, "value": "seen_jobs", "mode": "name"},
         "columns": {
           "mappingMode": "defineBelow",
