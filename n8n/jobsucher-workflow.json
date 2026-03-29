@@ -301,10 +301,6 @@
         "headerParameters": {
           "parameters": [
             {
-              "name": "Authorization",
-              "value": "=Bearer {{ $credentials.httpHeaderAuth.value }}"
-            },
-            {
               "name": "Content-Type",
               "value": "application/json"
             }
