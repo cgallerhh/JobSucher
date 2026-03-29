@@ -296,7 +296,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.linkdapi.com/v2/jobs/search",
+        "url": "https://linkdapi.com/v2/jobs/search",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
