@@ -78,24 +78,50 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "=https://de.indeed.com/rss?q={{ encodeURIComponent($json.queries) }}&l={{ encodeURIComponent($json.locations) }}&sort=date&fromage=1&format=rss",
+        "url": "https://de.indeed.com/rss",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.queries }}"
+            },
+            {
+              "name": "l",
+              "value": "={{ $json.locations }}"
+            },
+            {
+              "name": "sort",
+              "value": "date"
+            },
+            {
+              "name": "fromage",
+              "value": "3"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "Accept",
+              "value": "application/rss+xml, application/xml, text/xml, */*"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "de-DE,de;q=0.9"
+            }
+          ]
+        },
         "options": {
           "response": {
             "response": {
               "responseFormat": "text"
             }
-          },
-          "headers": {
-            "parameters": [
-              {
-                "name": "User-Agent",
-                "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
-              },
-              {
-                "name": "Accept",
-                "value": "application/rss+xml, application/xml, */*"
-              }
-            ]
           }
         }
       },
@@ -228,7 +254,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const job = $input.item.json;\nconst refnr = job.refnr || '';\nconst url = job.externeUrl || ('https://www.arbeitsagentur.de/jobsuche/jobdetail/' + refnr);\nconst id = Buffer.from(refnr || url).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);\nreturn {\n  id,\n  title: job.beruf || job.stellenbezeichnung || '',\n  company: job.arbeitgeber || '',\n  location: (job.arbeitsort && (job.arbeitsort.ort || job.arbeitsort.region)) || '',\n  description: (job.stellenbeschreibung || job.kurzbeschreibung || '').slice(0, 1500),\n  url,\n  posted_date: job.eintrittsdatum || job.aktuelleVeroeffentlichungsdatum || '',\n  source: 'Arbeitsagentur'\n};"
+        "jsCode": "const job = $input.item.json;\nconst refnr = job.refnr || '';\nconst url = job.externeUrl || ('https://www.arbeitsagentur.de/jobsuche/jobdetail/' + refnr);\nconst id = Buffer.from(refnr || url).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);\nreturn {\n  id,\n  title: job.titel || job.beruf || job.stellenbezeichnung || '',\n  company: job.arbeitgeber || '',\n  location: (job.arbeitsort && (job.arbeitsort.ort || job.arbeitsort.region)) || '',\n  description: (job.stellenbeschreibung || job.kurzbeschreibung || '').slice(0, 1500),\n  url,\n  posted_date: job.eintrittsdatum || job.aktuelleVeroeffentlichungsdatum || '',\n  source: 'Arbeitsagentur'\n};"
       },
       "id": "ba-normalize",
       "name": "BA: Normalize",
@@ -308,7 +334,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const result = $input.item.json;\nconst jobs = result.jobs || result.data || result.items || (Array.isArray(result) ? result : []);\nreturn { jobs };"
+        "jsCode": "const result = $input.item.json;\nlet jobs = [];\nif (Array.isArray(result.jobs)) jobs = result.jobs;\nelse if (Array.isArray(result.data)) jobs = result.data;\nelse if (result.data && Array.isArray(result.data.jobs)) jobs = result.data.jobs;\nelse if (result.data && Array.isArray(result.data.items)) jobs = result.data.items;\nelse if (Array.isArray(result.items)) jobs = result.items;\nelse if (Array.isArray(result)) jobs = result;\nreturn { jobs };"
       },
       "id": "li-fix-response",
       "name": "LI: Fix Response",
@@ -458,7 +484,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.item.json;\ntry {\n  let raw = item.content[0].text.trim();\n  if (raw.startsWith('```')) {\n    raw = raw.split('\\n').slice(1).join('\\n').replace(/```$/, '').trim();\n  }\n  const result = JSON.parse(raw);\n  const score = Math.max(0, Math.min(100, parseInt(result.score) || 0));\n  const emoji = score >= 70 ? '\\uD83D\\uDFE2' : score >= 40 ? '\\uD83D\\uDFE1' : '\\uD83D\\uDD35';\n  return {\n    ...item,\n    ai_score: score,\n    ai_reason: result.reason || '',\n    ai_strengths: result.strengths || [],\n    ai_concerns: result.concerns || [],\n    ai_action: result.action || '',\n    score_emoji: emoji\n  };\n} catch(e) {\n  return { ...item, ai_score: item.keyword_score || 0, ai_reason: '', ai_strengths: [], ai_concerns: [], ai_action: '', score_emoji: '\\uD83D\\uDD35' };\n}"
+        "jsCode": "const item = $input.item.json;\nconst job = $('Score >= 25 (Keyword)?').item.json;\ntry {\n  let raw = item.content[0].text.trim();\n  if (raw.startsWith('```')) {\n    raw = raw.split('\\n').slice(1).join('\\n').replace(/```$/, '').trim();\n  }\n  const result = JSON.parse(raw);\n  const score = Math.max(0, Math.min(100, parseInt(result.score) || 0));\n  const emoji = score >= 70 ? '\\uD83D\\uDFE2' : score >= 40 ? '\\uD83D\\uDFE1' : '\\uD83D\\uDD35';\n  return {\n    ...job,\n    ai_score: score,\n    ai_reason: result.reason || '',\n    ai_strengths: result.strengths || [],\n    ai_concerns: result.concerns || [],\n    ai_action: result.action || '',\n    score_emoji: emoji\n  };\n} catch(e) {\n  return { ...job, ai_score: job.keyword_score || 0, ai_reason: '', ai_strengths: [], ai_concerns: [], ai_action: '', score_emoji: '\\uD83D\\uDD35' };\n}"
       },
       "id": "parse-ai",
       "name": "AI Antwort parsen",
@@ -554,7 +580,7 @@
     },
     {
       "parameters": {
-        "fromEmail": "={{ $credentials.user }}",
+        "fromEmail": "christian.galler@gmail.com",
         "toEmail": "christian.galler@gmail.com",
         "subject": "={{ $json.subject }}",
         "emailType": "html",
