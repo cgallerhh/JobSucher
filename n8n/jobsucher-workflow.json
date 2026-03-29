@@ -619,11 +619,6 @@
       "main": [
         [
           {
-            "node": "Indeed: Split Queries",
-            "type": "main",
-            "index": 0
-          },
-          {
             "node": "BA: Split Queries",
             "type": "main",
             "index": 0
@@ -741,7 +736,7 @@
           {
             "node": "Merge 3 Quellen",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -807,7 +802,7 @@
           {
             "node": "Merge 3 Quellen",
             "type": "main",
-            "index": 2
+            "index": 1
           }
         ]
       ]
