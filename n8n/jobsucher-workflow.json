@@ -314,7 +314,7 @@
             },
             {
               "name": "timePosted",
-              "value": "past-24h"
+              "value": "24h"
             },
             {
               "name": "start",
