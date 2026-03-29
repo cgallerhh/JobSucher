@@ -310,7 +310,7 @@
             },
             {
               "name": "location",
-              "value": "={{ $json.locations === 'Deutschland' ? 'Germany' : $json.locations }}"
+              "value": "Germany"
             },
             {
               "name": "timePosted",
@@ -322,7 +322,14 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 10000
+            }
+          }
+        }
       },
       "id": "li-api",
       "name": "linkdAPI Jobs",
@@ -749,17 +756,6 @@
       ]
     },
     "LinkedIn: Split Queries": {
-      "main": [
-        [
-          {
-            "node": "LinkedIn: Split Locations",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "LinkedIn: Split Locations": {
       "main": [
         [
           {
