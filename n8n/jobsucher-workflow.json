@@ -298,7 +298,9 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "https://linkdapi-best-unofficial-linkedin-api.p.rapidapi.com/api/v1/jobs/search",
+        "url": "https://linkdapi.com/api/v1/jobs/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -320,19 +322,6 @@
             }
           ]
         },
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "X-RapidAPI-Key",
-              "value": "1c40669f86msh13168c02e29891fp1181e9jsn1049981ec553"
-            },
-            {
-              "name": "X-RapidAPI-Host",
-              "value": "linkdapi-best-unofficial-linkedin-api.p.rapidapi.com"
-            }
-          ]
-        },
         "options": {
           "batching": {
             "batch": {
@@ -349,7 +338,13 @@
       "position": [
         1120,
         800
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "linkdAPI Key"
+        }
+      }
     },
     {
       "parameters": {
