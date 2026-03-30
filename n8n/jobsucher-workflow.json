@@ -620,6 +620,95 @@
           "name": "Gmail SMTP"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "// GKV Karriereseiten – gibt alle 31 Kassen-URLs als Items aus\nconst pages = [\n  {\"company\": \"Techniker Krankenkasse\", \"url\": \"https://www.tk.de/karriere\"},\n  {\"company\": \"BARMER\", \"url\": \"https://www.barmer.de/karriere\"},\n  {\"company\": \"DAK-Gesundheit\", \"url\": \"https://www.dak.de/karriere\"},\n  {\"company\": \"IKK classic\", \"url\": \"https://www.ikk-classic.de/karriere\"},\n  {\"company\": \"KKH\", \"url\": \"https://www.kkh.de/karriere\"},\n  {\"company\": \"SBK\", \"url\": \"https://www.sbk.org/karriere/arbeiten-bei-der-sbk\"},\n  {\"company\": \"hkk\", \"url\": \"https://www.hkk.de/karriere\"},\n  {\"company\": \"BKK firmus\", \"url\": \"https://www.bkk-firmus.de/karriere\"},\n  {\"company\": \"Mobil Krankenkasse\", \"url\": \"https://www.mobil-krankenkasse.de/karriere\"},\n  {\"company\": \"VIACTIV\", \"url\": \"https://www.viactiv.de/jobs-und-karriere\"},\n  {\"company\": \"IKK Südwest\", \"url\": \"https://www.ikk-suedwest.de/karriere\"},\n  {\"company\": \"HEK\", \"url\": \"https://karriere.hek.de\"},\n  {\"company\": \"Pronova BKK\", \"url\": \"https://www.pronovabkk.de/unternehmen/karriere\"},\n  {\"company\": \"BAHN-BKK\", \"url\": \"https://www.bahn-bkk.de/portale/karriere.html\"},\n  {\"company\": \"mkk\", \"url\": \"https://karriere.meine-krankenkasse.de\"},\n  {\"company\": \"BIG direkt gesund\", \"url\": \"https://www.big-direkt.de/de/karriere\"},\n  {\"company\": \"mhplus BKK\", \"url\": \"https://www.mhplus-krankenkasse.de/job-karriere\"},\n  {\"company\": \"IKK gesund plus\", \"url\": \"https://www.ikk-gesundplus.de/die-ikk/karriere\"},\n  {\"company\": \"Novitas BKK\", \"url\": \"https://karriere.novitas-bkk.de\"},\n  {\"company\": \"vivida BKK\", \"url\": \"https://www.vividabkk.de/karriere\"},\n  {\"company\": \"BKK Linde\", \"url\": \"https://www.bkk-linde.de/karriere\"},\n  {\"company\": \"IK – Die Innovationskasse\", \"url\": \"https://www.die-ik.de/karriere-bei-der-innovationskasse\"},\n  {\"company\": \"Bosch BKK\", \"url\": \"https://www.bosch-bkk.de/karriere\"},\n  {\"company\": \"IKK Brandenburg und Berlin\", \"url\": \"https://www.ikkbb.de/karriere\"},\n  {\"company\": \"SECURVITA BKK\", \"url\": \"https://www.securvita.de/krankenkasse-securvita/stellenangebote.html\"},\n  {\"company\": \"Debeka BKK\", \"url\": \"https://www.debeka-bkk.de/karriere\"},\n  {\"company\": \"Salus BKK\", \"url\": \"https://www.salus-bkk.de/karriere\"},\n  {\"company\": \"R+V BKK\", \"url\": \"https://www.ruv-bkk.de/karriere\"},\n  {\"company\": \"BKK Gildemeister Seidensticker\", \"url\": \"https://www.bkkgs.de/karriere\"},\n  {\"company\": \"BKK Pfalz\", \"url\": \"https://www.bkkpfalz.de/unternehmen/karriere\"}\n];\nreturn pages;"
+      },
+      "id": "gkv-pages",
+      "name": "GKV: Pages List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 1100]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "Accept",
+              "value": "text/html,application/xhtml+xml,*/*"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "de-DE,de;q=0.9"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 2000
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": true,
+              "maxRedirects": 5
+            }
+          }
+        }
+      },
+      "id": "gkv-fetch",
+      "name": "GKV: Fetch HTML",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 1100],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.item.json;\nconst pageInfo = $('GKV: Pages List').item.json;\nconst html = (item.data || item.body || '').toString();\nconst pageUrl = pageInfo.url;\nconst company = pageInfo.company;\n\nif (!html || html.length < 100) return { jobs: [], company, pageUrl };\n\nconst crypto = require('crypto');\nfunction md5(str) { return crypto.createHash('md5').update(str).digest('hex'); }\n\nfunction locationFromJsonLd(p) {\n  const loc = p.jobLocation;\n  if (!loc) return '';\n  const l = Array.isArray(loc) ? loc[0] : loc;\n  if (l && typeof l === 'object') {\n    const addr = l.address || {};\n    if (typeof addr === 'object') return addr.addressLocality || addr.addressRegion || '';\n  }\n  return '';\n}\n\nfunction collectPostings(data) {\n  if (!data || typeof data !== 'object') return [];\n  if (Array.isArray(data)) return data.flatMap(d => collectPostings(d));\n  if (data['@type'] === 'JobPosting') return [data];\n  if (data['@type'] === 'ItemList') {\n    return (data.itemListElement || []).flatMap(el => {\n      const it = (el && el.item) || el;\n      return it && it['@type'] === 'JobPosting' ? [it] : [];\n    });\n  }\n  return [];\n}\n\nconst jobs = [];\n\n// Strategy 1: JSON-LD\nconst jsonLdRe = /<script[^>]+type=[\"']application\\/ld\\+json[\"'][^>]*>([\\s\\S]*?)<\\/script>/gi;\nlet m;\nwhile ((m = jsonLdRe.exec(html)) !== null) {\n  try {\n    const data = JSON.parse(m[1]);\n    const postings = collectPostings(data);\n    for (const p of postings) {\n      const title = (p.title || '').trim();\n      if (!title) continue;\n      const link = p.url || pageUrl;\n      const emp = p.hiringOrganization || {};\n      const comp = (typeof emp === 'object' ? emp.name : '') || company;\n      const loc = locationFromJsonLd(p);\n      jobs.push({\n        id: md5(link),\n        title,\n        company: comp,\n        location: loc || 'Deutschland',\n        url: link,\n        description: (p.description || '').slice(0, 500),\n        posted_date: p.datePosted || '',\n        source: 'GKV Karriere'\n      });\n    }\n  } catch(e) {}\n}\n\n// Strategy 2: HTML fallback – find heading elements near job-class containers\nif (jobs.length === 0) {\n  const seen = new Set();\n  const re = /<(?:h[234])[^>]*>(.*?)<\\/h[234]>/gi;\n  while ((m = re.exec(html)) !== null && jobs.length < 30) {\n    const title = m[1].replace(/<[^>]+>/g, '').trim();\n    if (title.length < 10 || title.length > 160) continue;\n    const lower = title.toLowerCase();\n    if (!['manager', 'leiter', 'vertrieb', 'sales', 'account', 'digital', 'it ', 'berater', 'koordinat'].some(k => lower.includes(k))) continue;\n    if (seen.has(title)) continue;\n    seen.add(title);\n    jobs.push({\n      id: md5(company + title),\n      title,\n      company,\n      location: 'Deutschland',\n      url: pageUrl,\n      description: '',\n      posted_date: '',\n      source: 'GKV Karriere'\n    });\n  }\n}\n\nreturn { jobs, company, pageUrl };"
+      },
+      "id": "gkv-parse",
+      "name": "GKV: Parse Jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 1100]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "jobs",
+        "options": {}
+      },
+      "id": "gkv-split",
+      "name": "GKV: Split Jobs",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [1340, 1100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const job = $input.item.json;\nif (!job.id || !job.title) return null;\nreturn {\n  id: job.id,\n  title: job.title,\n  company: job.company || '',\n  location: job.location || 'Deutschland',\n  description: (job.description || '').slice(0, 1500),\n  url: job.url || '',\n  posted_date: job.posted_date || '',\n  source: 'GKV Karriere'\n};"
+      },
+      "id": "gkv-normalize",
+      "name": "GKV: Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 1100]
     }
   ],
   "connections": {
@@ -644,6 +733,11 @@
           },
           {
             "node": "LinkedIn: Split Queries",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GKV: Pages List",
             "type": "main",
             "index": 0
           }
@@ -811,6 +905,61 @@
             "node": "Merge 3 Quellen",
             "type": "main",
             "index": 1
+          }
+        ]
+      ]
+    },
+    "GKV: Pages List": {
+      "main": [
+        [
+          {
+            "node": "GKV: Fetch HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GKV: Fetch HTML": {
+      "main": [
+        [
+          {
+            "node": "GKV: Parse Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GKV: Parse Jobs": {
+      "main": [
+        [
+          {
+            "node": "GKV: Split Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GKV: Split Jobs": {
+      "main": [
+        [
+          {
+            "node": "GKV: Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GKV: Normalize": {
+      "main": [
+        [
+          {
+            "node": "Merge 3 Quellen",
+            "type": "main",
+            "index": 2
           }
         ]
       ]
