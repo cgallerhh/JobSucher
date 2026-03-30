@@ -298,7 +298,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "https://linkdapi.p.rapidapi.com/api/v1/jobs/search",
+        "url": "https://linkdapi-best-unofficial-linkedin-api.p.rapidapi.com/api/v1/jobs/search",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -329,7 +329,7 @@
             },
             {
               "name": "X-RapidAPI-Host",
-              "value": "linkdapi.p.rapidapi.com"
+              "value": "linkdapi-best-unofficial-linkedin-api.p.rapidapi.com"
             }
           ]
         },
