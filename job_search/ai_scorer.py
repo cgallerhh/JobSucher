@@ -29,7 +29,7 @@ MODEL = "claude-haiku-4-5-20251001"
 API_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_VERSION = "2023-06-01"
 MAX_WORKERS = 5        # Parallele API-Calls (Haiku Rate-Limit: 50 RPM → 5 sicher)
-MAX_DESC_CHARS = 1500  # Mehr Kontext für bessere Bewertungsqualität
+MAX_DESC_CHARS = 800   # Reduziert auf 800 Zeichen → ~35% weniger Input-Tokens
 
 
 def _load_context() -> str:
