@@ -75,7 +75,7 @@ class LinkedInScraper(BaseScraper):
                         keyword=query,
                         locations=li_location,
                         experience=_EXPERIENCE_LEVELS,
-                        date_posted="24h",
+                        date_posted="1week",
                         sort_by="date_posted",
                         count=MAX_JOBS_PER_QUERY,
                     )
