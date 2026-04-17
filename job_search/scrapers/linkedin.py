@@ -58,13 +58,6 @@ class LinkedInScraper(BaseScraper):
             )
             return []
 
-        # LinkedIn Geo-IDs: Germany=101282230, Hamburg=106995700
-        li_location = (
-            "101282230"
-            if location.lower() in ("deutschland", "germany")
-            else "106995700"
-        )
-
         seen: set = set()
         jobs: List[Dict] = []
 
@@ -72,8 +65,7 @@ class LinkedInScraper(BaseScraper):
             for query in queries:
                 try:
                     result = client.search_jobs_v2(
-                        keyword=query,
-                        locations=li_location,
+                        keyword=f"{query} {location}",
                         experience=_EXPERIENCE_LEVELS,
                         date_posted="1week",
                         sort_by="date_posted",
