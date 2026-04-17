@@ -58,11 +58,11 @@ class LinkedInScraper(BaseScraper):
             )
             return []
 
-        # Standort-Mapping: "Deutschland" → "Germany", sonst "Hamburg, Germany" etc.
+        # LinkedIn Geo-IDs: Germany=101282230, Hamburg=106995700
         li_location = (
-            "Germany"
+            "101282230"
             if location.lower() in ("deutschland", "germany")
-            else f"{location}, Germany"
+            else "106995700"
         )
 
         seen: set = set()
@@ -80,13 +80,22 @@ class LinkedInScraper(BaseScraper):
                         count=MAX_JOBS_PER_QUERY,
                     )
 
-                    # API gibt ein Dict zurück; Jobs sind typischerweise unter 'jobs', 'data' oder 'items'
-                    raw_jobs = (
-                        result.get("jobs")
-                        or result.get("data")
-                        or result.get("items")
-                        or (result if isinstance(result, list) else [])
-                    )
+                    # Robuste Extraktion: API kann Liste oder verschachteltes Dict zurückgeben
+                    raw_jobs = result if isinstance(result, list) else []
+                    if not raw_jobs:
+                        for key in ("jobs", "data", "items", "results"):
+                            val = result.get(key) if isinstance(result, dict) else None
+                            if isinstance(val, list):
+                                raw_jobs = val
+                                break
+                            if isinstance(val, dict):
+                                for k2 in ("jobs", "data", "items", "results"):
+                                    v2 = val.get(k2)
+                                    if isinstance(v2, list):
+                                        raw_jobs = v2
+                                        break
+                                if raw_jobs:
+                                    break
 
                     for job in raw_jobs[:MAX_JOBS_PER_QUERY]:
                         if not isinstance(job, dict):
