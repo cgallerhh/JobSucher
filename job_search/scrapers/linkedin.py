@@ -73,7 +73,7 @@ class LinkedInScraper(BaseScraper):
                 try:
                     result = client.search_jobs_v2(
                         keyword=query,
-                        location=li_location,
+                        locations=li_location,
                         experience=_EXPERIENCE_LEVELS,
                         date_posted="24h",
                         sort_by="date_posted",
