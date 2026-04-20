@@ -141,7 +141,7 @@ def score_jobs_with_ai(jobs: List[Dict]) -> List[Dict]:
     Returns the same list with updated 'score' and new AI fields.
     Jobs where AI scoring fails keep their original keyword score.
     """
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
     if not api_key:
         logger.warning("ANTHROPIC_API_KEY not set - keeping keyword scores")
         return jobs
