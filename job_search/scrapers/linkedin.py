@@ -44,7 +44,7 @@ class LinkedInScraper(BaseScraper):
     POLITE_DELAY = 1.0  # linkdAPI ist kein Scraping → geringere Verzögerung nötig
 
     def fetch(self, queries: List[str], location: str) -> List[Dict]:
-        api_key = os.environ.get("LINKDAPI_KEY", "")
+        api_key = os.environ.get("LINKDAPI_KEY", "").strip()
         if not api_key:
             logger.info("LINKDAPI_KEY nicht gesetzt – LinkedIn wird übersprungen")
             return []
@@ -73,7 +73,7 @@ class LinkedInScraper(BaseScraper):
                 try:
                     result = client.search_jobs_v2(
                         keyword=query,
-                        location=li_location,
+                        locations=li_location,
                         experience=_EXPERIENCE_LEVELS,
                         date_posted="24h",
                         sort_by="date_posted",
