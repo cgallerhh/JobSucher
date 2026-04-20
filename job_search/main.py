@@ -60,8 +60,6 @@ def main() -> None:
 
     seen = load_seen()
 
-    # Location-agnostic scrapers scrapen direkt bekannte Karriereseiten
-    location_aware = [ArbeitsagenturScraper(), LinkedInScraper()]
     location_agnostic = [GKVCareersScraper(), ITDienstleisterScraper()]
 
     agnostic_queries = {
@@ -71,15 +69,24 @@ def main() -> None:
 
     raw_jobs: List[dict] = []
 
-    # Run location-aware scrapers for each configured search location
+    # Arbeitsagentur: alle konfigurierten Locations
     for location in SEARCH_LOCATIONS:
-        for scraper in location_aware:
-            try:
-                jobs = scraper.fetch(EXTERNAL_QUERIES, location)
-                logger.info("%s [%s] → %d jobs fetched", scraper.SOURCE_NAME, location, len(jobs))
-                raw_jobs.extend(jobs)
-            except Exception as exc:
-                logger.error("%s [%s] scraper failed: %s", scraper.SOURCE_NAME, location, exc)
+        scraper = ArbeitsagenturScraper()
+        try:
+            jobs = scraper.fetch(EXTERNAL_QUERIES, location)
+            logger.info("%s [%s] → %d jobs fetched", scraper.SOURCE_NAME, location, len(jobs))
+            raw_jobs.extend(jobs)
+        except Exception as exc:
+            logger.error("%s [%s] scraper failed: %s", scraper.SOURCE_NAME, location, exc)
+
+    # LinkedIn: nur deutschlandweit (remote) – Hamburg liefert zu wenige Treffer
+    linkedin = LinkedInScraper()
+    try:
+        jobs = linkedin.fetch(EXTERNAL_QUERIES, "Deutschland")
+        logger.info("%s [Deutschland/remote] → %d jobs fetched", linkedin.SOURCE_NAME, len(jobs))
+        raw_jobs.extend(jobs)
+    except Exception as exc:
+        logger.error("%s scraper failed: %s", linkedin.SOURCE_NAME, exc)
 
     # Run location-agnostic scrapers once
     for scraper in location_agnostic:
