@@ -24,7 +24,7 @@ import requests
 logger = logging.getLogger(__name__)
 
 CONTEXT_DIR = Path("context")
-MODEL = "gpt-5.4"
+MODEL = "gpt-4o-mini"
 API_URL = "https://api.openai.com/v1/chat/completions"
 MAX_WORKERS = 5
 MAX_DESC_CHARS = 1500
