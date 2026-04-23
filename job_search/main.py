@@ -17,7 +17,7 @@ from typing import List, Set
 
 from .ai_scorer import score_jobs_with_ai
 from .config import EXTERNAL_QUERIES, GKV_QUERIES, IT_DIENSTLEISTER_QUERIES, PROFILE, SEARCH_LOCATIONS
-from .emailer import build_html, send_email
+from .emailer import build_empty_html, build_html, send_email
 from .filter import is_relevant, score_job
 from .scrapers.arbeitsagentur import ArbeitsagenturScraper
 from .scrapers.gkv_careers import GKVCareersScraper
@@ -141,9 +141,9 @@ def main() -> None:
         seen.add(job["id"])
     save_seen(seen)
 
-    # Send email
+    # Send email, including a null-report when nothing relevant was found
+    recipient = os.environ.get("RECIPIENT_EMAIL", PROFILE["email"])
     if relevant:
-        recipient = os.environ.get("RECIPIENT_EMAIL", PROFILE["email"])
         subject = (
             f"\U0001f50d {len(relevant)} neue Stelle{'n' if len(relevant) != 1 else ''} "
             f"f\u00fcr dich | {datetime.now().strftime('%d.%m.%Y')}"
@@ -155,7 +155,13 @@ def main() -> None:
         except Exception as exc:
             logger.error("Failed to send email: %s", exc)
     else:
-        logger.info("No relevant new jobs found today – no email sent.")
+        subject = f"\U0001f4ed Nullmeldung JobSucher | {datetime.now().strftime('%d.%m.%Y')}"
+        html = build_empty_html(PROFILE["name"])
+        try:
+            send_email(to=recipient, subject=subject, html=html)
+            logger.info("Done – null report sent to %s", recipient)
+        except Exception as exc:
+            logger.error("Failed to send null report email: %s", exc)
 
 
 if __name__ == "__main__":

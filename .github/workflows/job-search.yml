@@ -1,10 +1,10 @@
 name: Daily Job Search
 
 on:
-  # Every weekday at 07:00 UTC = 09:00 CEST (summer) / 08:00 CET (winter)
-  # Adjust the hour if you want exact 9:00 in winter: change 7 → 8
+  # Daily at 07:00 UTC = 09:00 CEST (summer) / 08:00 CET (winter)
+  # GitHub Actions schedule is not minute-exact and may start late.
   schedule:
-    - cron: '0 7 * * 1-5'
+    - cron: '0 7 * * *'
 
   # Manual trigger for testing – just click "Run workflow" in GitHub Actions
   workflow_dispatch:

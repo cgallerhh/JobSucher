@@ -187,10 +187,56 @@ def build_html(jobs: List[Dict], name: str) -> str:
     <!-- Footer -->
     <p style="text-align:center;margin-top:20px;font-size:11px;color:#9ca3af;">
       Job-Search-Bot &middot; Quellen: Arbeitsagentur &middot; LinkedIn &middot; GKV-Karriereseiten<br>
-      <a href="https://github.com/cgallerhh/matemwe-tide/actions"
+      <a href="https://github.com/cgallerhh/JobSucher/actions"
          style="color:#93c5fd;text-decoration:none;">Workflow-Status</a>
     </p>
 
+  </div>
+</body>
+</html>"""
+
+
+def build_empty_html(name: str) -> str:
+    today = datetime.now().strftime("%d.%m.%Y")
+    first_name = name.split()[0]
+
+    return f"""<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Keine neuen Stellen {today}</title>
+</head>
+<body style="margin:0;padding:0;background:#f3f4f6;
+             font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:680px;margin:0 auto;padding:24px 16px;">
+    <div style="background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 100%);
+                border-radius:14px;padding:24px 28px;margin-bottom:20px;">
+      <h1 style="margin:0 0 4px;font-size:20px;color:#fff;font-weight:800;">
+        &#128269; Nullmeldung &mdash; {today}
+      </h1>
+      <p style="margin:0;font-size:13px;color:#bfdbfe;">
+        Heute wurden keine neuen passenden Stellen gefunden.
+      </p>
+    </div>
+
+    <div style="background:#fff;border-radius:12px;padding:24px 28px;
+                box-shadow:0 1px 4px rgba(0,0,0,0.07);border:1px solid #e5e7eb;">
+      <p style="margin:0 0 12px;font-size:15px;color:#111827;">Hi {first_name},</p>
+      <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.6;">
+        der tägliche GitHub-Lauf war erfolgreich, aber es gab heute keine neuen Stellen,
+        die nach Filterung und Bewertung in dein Profil gepasst haben.
+      </p>
+      <p style="margin:0;font-size:14px;color:#374151;line-height:1.6;">
+        Du bekommst morgen wieder automatisch ein Update.
+      </p>
+    </div>
+
+    <p style="text-align:center;margin-top:20px;font-size:11px;color:#9ca3af;">
+      Job-Search-Bot &middot; tägliche Nullmeldung aktiviert<br>
+      <a href="https://github.com/cgallerhh/JobSucher/actions"
+         style="color:#93c5fd;text-decoration:none;">Workflow-Status</a>
+    </p>
   </div>
 </body>
 </html>"""
