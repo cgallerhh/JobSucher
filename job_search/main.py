@@ -7,7 +7,8 @@ import json
 import logging
 import os
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timedelta
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -17,7 +18,14 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 from typing import List, Set
 
 from .ai_scorer import score_jobs_with_ai
-from .config import EXTERNAL_QUERIES, GKV_QUERIES, IT_DIENSTLEISTER_QUERIES, PROFILE, SEARCH_LOCATIONS
+from .config import (
+    EXTERNAL_QUERIES,
+    GKV_QUERIES,
+    IT_DIENSTLEISTER_QUERIES,
+    MAX_JOB_AGE_DAYS,
+    PROFILE,
+    SEARCH_LOCATIONS,
+)
 from .emailer import build_empty_html, build_html, send_email
 from .filter import relevance_gate, score_job
 from .scrapers.arbeitsagentur import ArbeitsagenturScraper
@@ -56,6 +64,33 @@ def save_seen(seen: Set[str]) -> None:
     # Keep only the most recent MAX_SEEN_ENTRIES to prevent unbounded growth
     trimmed = list(seen)[-MAX_SEEN_ENTRIES:]
     SEEN_FILE.write_text(json.dumps(trimmed, indent=2))
+
+
+def parse_posted_date(value: str):
+    """Parse common job-board date formats; return None when a source omits dates."""
+    value = (value or "").strip()
+    if not value:
+        return None
+
+    for fmt in ("%Y-%m-%d", "%d.%m.%Y", "%Y/%m/%d"):
+        try:
+            return datetime.strptime(value[:10], fmt).date()
+        except ValueError:
+            pass
+
+    try:
+        parsed = parsedate_to_datetime(value)
+        return parsed.date()
+    except (TypeError, ValueError):
+        return None
+
+
+def is_fresh_job(job: dict) -> bool:
+    """Keep undated jobs, but reject parseable dates older than MAX_JOB_AGE_DAYS."""
+    posted = parse_posted_date(job.get("posted_date", ""))
+    if posted is None:
+        return True
+    return posted >= (datetime.now().date() - timedelta(days=MAX_JOB_AGE_DAYS))
 
 
 # ── Main ─────────────────────────────────────────────────────────────────────
@@ -138,6 +173,13 @@ def main() -> None:
     rejected_by_reason: Counter = Counter()
     rejected_by_source: Counter = Counter()
     for job in new_jobs:
+        if not is_fresh_job(job):
+            rejected_by_reason["too_old"] += 1
+            rejected_by_source[job["source"]] += 1
+            logger.debug("  FILTERED (too_old): [%s] %s @ %s (%s)",
+                         job["source"], job["title"][:60], job["company"][:30],
+                         job.get("posted_date", ""))
+            continue
         s = score_job(job)
         passes_gate, reason = relevance_gate(job, s)
         if passes_gate:

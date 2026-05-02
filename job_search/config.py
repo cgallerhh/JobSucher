@@ -275,3 +275,7 @@ MIN_SCORE = 25
 
 # Max jobs fetched per query per source (avoid hammering)
 MAX_JOBS_PER_QUERY = 25
+
+# Only show jobs with a parseable posting date no older than this.
+# Sources without a posting date are kept and judged by the relevance filters.
+MAX_JOB_AGE_DAYS = 14
