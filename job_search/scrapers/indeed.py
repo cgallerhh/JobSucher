@@ -24,6 +24,7 @@ RSS_URL  = f"{BASE_URL}/jobs"
 class IndeedScraper(BaseScraper):
     SOURCE_NAME = "Indeed"
     _warmed_up: bool = False
+    _blocked: bool = False
 
     def _warmup(self) -> None:
         """Visit homepage once to obtain session cookies."""
@@ -41,6 +42,8 @@ class IndeedScraper(BaseScraper):
         jobs: List[Dict] = []
 
         for query in queries:
+            if self._blocked:
+                break
             jobs.extend(self._rss(query, location, seen))
             time.sleep(self.POLITE_DELAY)
 
@@ -60,8 +63,15 @@ class IndeedScraper(BaseScraper):
             resp = self.session.get(
                 url,
                 headers={"Accept": "application/rss+xml, application/xml, */*"},
-                timeout=15,
+                timeout=8,
             )
+            if resp.status_code == 403:
+                self._blocked = True
+                logger.warning(
+                    "Indeed blockt den RSS-Zugriff aus GitHub Actions mit HTTP 403; "
+                    "Indeed wird für diesen Lauf übersprungen."
+                )
+                return []
             if resp.status_code != 200:
                 logger.warning("Indeed: HTTP %s for '%s'", resp.status_code, query)
                 return []

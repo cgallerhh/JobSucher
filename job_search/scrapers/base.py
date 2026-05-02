@@ -30,15 +30,15 @@ class BaseScraper(ABC):
         self.session = requests.Session()
         self.session.headers.update(HEADERS)
 
-    def get(self, url: str, **kwargs) -> requests.Response:
+    def get(self, url: str, timeout: int = 20, retries: int = 3, **kwargs) -> requests.Response:
         """HTTP GET with up to 3 retries and exponential backoff."""
-        for attempt in range(3):
+        for attempt in range(retries):
             try:
-                resp = self.session.get(url, timeout=20, **kwargs)
+                resp = self.session.get(url, timeout=timeout, **kwargs)
                 resp.raise_for_status()
                 return resp
             except requests.RequestException as exc:
-                if attempt == 2:
+                if attempt == retries - 1:
                     raise
                 wait = 2 ** attempt
                 logger.warning(

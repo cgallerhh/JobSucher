@@ -3,6 +3,7 @@ StepStone scraper – HTML-Scraping der öffentlichen Suchergebnisseite.
 """
 import hashlib
 import logging
+import requests
 import time
 from typing import Dict, List
 from urllib.parse import quote
@@ -34,15 +35,22 @@ def _slug(text: str) -> str:
 class StepStoneScraper(BaseScraper):
     SOURCE_NAME = "StepStone"
     POLITE_DELAY = 2.5
+    MAX_QUERY_FAILURES = 3
 
     def fetch(self, queries: List[str], location: str) -> List[Dict]:
         seen: set = set()
         jobs: List[Dict] = []
+        failures = 0
 
         for query in queries:
             try:
                 url = f"{BASE_URL}/jobs/{_slug(query)}/in-{_slug(location)}/"
-                resp = self.get(url, params={"radius": "50", "datePosted": "1"})
+                resp = self.get(
+                    url,
+                    params={"radius": "50", "datePosted": "1"},
+                    timeout=8,
+                    retries=1,
+                )
                 soup = BeautifulSoup(resp.text, "lxml")
 
                 articles = soup.find_all("article", attrs={"data-at": "job-item"})
@@ -96,8 +104,19 @@ class StepStoneScraper(BaseScraper):
                     except Exception as exc:
                         logger.debug("StepStone card parse error: %s", exc)
 
+            except requests.Timeout as exc:
+                failures += 1
+                logger.warning("StepStone query '%s' timed out: %s", query, exc)
             except Exception as exc:
+                failures += 1
                 logger.error("StepStone query '%s' failed: %s", query, exc)
+
+            if failures >= self.MAX_QUERY_FAILURES:
+                logger.warning(
+                    "StepStone: %d Suchanfragen fehlgeschlagen; Quelle wird für diesen Lauf übersprungen.",
+                    failures,
+                )
+                break
 
             time.sleep(self.POLITE_DELAY)
 
