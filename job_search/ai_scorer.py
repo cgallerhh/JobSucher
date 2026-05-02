@@ -24,7 +24,7 @@ import requests
 logger = logging.getLogger(__name__)
 
 CONTEXT_DIR = Path("context")
-MODEL = "gpt-5.4"
+MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini"
 API_URL = "https://api.openai.com/v1/chat/completions"
 MAX_WORKERS = 5
 MAX_DESC_CHARS = 1500
@@ -96,7 +96,8 @@ def _call_api(api_key: str, system_prompt: str, job_text: str) -> dict:
         },
         timeout=30,
     )
-    response.raise_for_status()
+    if not response.ok:
+        raise RuntimeError(f"{response.status_code} {response.text[:500]}")
     raw = response.json()["choices"][0]["message"]["content"].strip()
     if not raw:
         raise ValueError("Empty response from model")
@@ -152,7 +153,7 @@ def score_jobs_with_ai(jobs: List[Dict]) -> List[Dict]:
 
     # Connectivity check: schnelles Fail-Fast vor Massen-Scoring
     try:
-        requests.post(
+        response = requests.post(
             API_URL,
             headers=_headers(api_key),
             json={
@@ -161,7 +162,9 @@ def score_jobs_with_ai(jobs: List[Dict]) -> List[Dict]:
                 "messages": [{"role": "user", "content": "OK"}],
             },
             timeout=10,
-        ).raise_for_status()
+        )
+        if not response.ok:
+            raise RuntimeError(f"{response.status_code} {response.text[:500]}")
     except Exception as exc:
         logger.error("OpenAI API nicht erreichbar: %s - behalte Keyword-Scores", exc)
         return jobs
@@ -190,5 +193,5 @@ def score_jobs_with_ai(jobs: List[Dict]) -> List[Dict]:
             scored[i] = result_job
 
     ai_scored_count = sum(1 for j in scored if j and "ai_reason" in j)
-    logger.info("AI scored %d/%d jobs (parallel, OpenAI gpt-4o-mini)", ai_scored_count, len(jobs))
+    logger.info("AI scored %d/%d jobs (parallel, OpenAI %s)", ai_scored_count, len(jobs), MODEL)
     return [j for j in scored if j is not None]

@@ -39,6 +39,31 @@ def _extract(job: dict, *keys: str, default: str = "") -> str:
     return default
 
 
+def _job_items(payload: object) -> List[dict]:
+    """Return job dicts from the different response shapes linkdAPI may return."""
+    if isinstance(payload, list):
+        return [item for item in payload if isinstance(item, dict)]
+
+    if not isinstance(payload, dict):
+        return []
+
+    for key in ("jobs", "items", "results", "elements"):
+        nested = _job_items(payload.get(key))
+        if nested:
+            return nested
+
+    data = payload.get("data")
+    if data is not None:
+        nested = _job_items(data)
+        if nested:
+            return nested
+
+    if any(payload.get(key) for key in ("title", "jobTitle", "job_title", "position")):
+        return [payload]
+
+    return []
+
+
 class LinkedInScraper(BaseScraper):
     SOURCE_NAME = "LinkedIn"
     POLITE_DELAY = 1.0  # linkdAPI ist kein Scraping → geringere Verzögerung nötig
@@ -80,13 +105,7 @@ class LinkedInScraper(BaseScraper):
                         count=MAX_JOBS_PER_QUERY,
                     )
 
-                    # API gibt ein Dict zurück; Jobs sind typischerweise unter 'jobs', 'data' oder 'items'
-                    raw_jobs = (
-                        result.get("jobs")
-                        or result.get("data")
-                        or result.get("items")
-                        or (result if isinstance(result, list) else [])
-                    )
+                    raw_jobs = _job_items(result)
 
                     for job in raw_jobs[:MAX_JOBS_PER_QUERY]:
                         if not isinstance(job, dict):
