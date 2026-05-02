@@ -1,18 +1,151 @@
-"""
-Relevance scoring for job listings based on Christian Galler's profile.
-
-Score 0–100:
-  ≥ 70  → Sehr hoch (grün)
-  ≥ 50  → Hoch (hellgrün)
-  ≥ 35  → Mittel (gelb)
-  ≥ MIN_SCORE → Relevant (blau)
-"""
+"""Relevance scoring and hard relevance gates for job listings."""
 from .config import MIN_SCORE, NEGATIVE_KEYWORDS, POSITIVE_KEYWORDS
 
+HARD_EXCLUDE_TITLE_KEYWORDS = [
+    "sachbearbeiter",
+    "sachbearbeitung",
+    "kundenberater",
+    "kundenberatung",
+    "kundenservice",
+    "servicecenter",
+    "call center",
+    "sozialversicherungsfachangestell",
+    "leistungssachbearbeiter",
+    "fallmanager",
+    "case manager",
+    "pflege",
+    "arzt",
+    "ärztin",
+    "medizinische fachangestellte",
+    "therapeut",
+    "buchhaltung",
+    "controller",
+    "recruiter",
+]
 
-def score_job(job: dict) -> int:
-    """Return a relevance score 0–100 for a job dict."""
-    text = " ".join(
+HARD_EXCLUDE_TEXT_KEYWORDS = [
+    "automotive",
+    "automobil",
+    "autohaus",
+    "autohandel",
+    "fahrzeug",
+    "fahrzeuge",
+    "fleet management",
+    "flottenmanagement",
+    "leasing",
+    "maschinenbau",
+    "produktion",
+    "logistik",
+    "lager",
+]
+
+SALES_ROLE_KEYWORDS = [
+    "account manager",
+    "key account",
+    "sales manager",
+    "sales director",
+    "account executive",
+    "business development",
+    "client partner",
+    "partner manager",
+    "alliance manager",
+    "commercial lead",
+    "go-to-market",
+    "vertrieb",
+    "neukundengewinnung",
+    "großkunden",
+    "enterprise sales",
+]
+
+STRATEGIC_ROLE_KEYWORDS = [
+    "leiter",
+    "bereichsleiter",
+    "head of",
+    "director",
+    "chief",
+    "cdo",
+    "lead",
+    "principal",
+    "strategie",
+    "transformation",
+    "digitalisierung",
+    "innovation",
+    "it-steuerung",
+    "it-strategie",
+    "it-governance",
+    "demand management",
+    "portfolio",
+    "programmleiter",
+    "produkt",
+    "procurement",
+    "sourcing",
+    "vendor manager",
+    "vergabemanagement",
+    "tender manager",
+    "dienstleistersteuerung",
+]
+
+DOMAIN_KEYWORDS = [
+    "gkv",
+    "gesetzliche krankenversicherung",
+    "krankenkasse",
+    "krankenkassen",
+    "bkk",
+    "ikk",
+    "dak",
+    "tk ",
+    "public sector",
+    "öffentlicher sektor",
+    "behörde",
+    "behörden",
+    "ögd",
+    "sozialversicherung",
+    "sgb v",
+    "ehealth",
+    "digital health",
+    "healthcare it",
+    "health it",
+    "gesundheits-it",
+    "telematikinfrastruktur",
+    "ti 2.0",
+    "bitmarck",
+    "iskv",
+]
+
+INTERNAL_GKV_STRATEGIC_TITLE_KEYWORDS = [
+    "leiter",
+    "bereichsleiter",
+    "head of",
+    "director",
+    "chief",
+    "cdo",
+    "digital",
+    "digitalisierung",
+    "e-health",
+    "ehealth",
+    "it-strategie",
+    "it-steuerung",
+    "it-governance",
+    "it-portfolio",
+    "cloud",
+    "innovation",
+    "strategie",
+    "unternehmensentwicklung",
+    "vorstandsstab",
+    "chief of staff",
+    "vergabemanagement",
+    "tender",
+    "sourcing",
+    "procurement",
+    "dienstleistersteuerung",
+    "vendor",
+    "produkt",
+    "omnichannel",
+]
+
+
+def _text(job: dict) -> str:
+    return " ".join(
         [
             job.get("title", ""),
             job.get("description", ""),
@@ -20,6 +153,19 @@ def score_job(job: dict) -> int:
             job.get("location", ""),
         ]
     ).lower()
+
+
+def _title(job: dict) -> str:
+    return job.get("title", "").lower()
+
+
+def _contains_any(text: str, keywords: list[str]) -> bool:
+    return any(keyword in text for keyword in keywords)
+
+
+def score_job(job: dict) -> int:
+    """Return a relevance score 0–100 for a job dict."""
+    text = _text(job)
 
     score = 0
 
@@ -36,3 +182,33 @@ def score_job(job: dict) -> int:
 
 def is_relevant(score: int) -> bool:
     return score >= MIN_SCORE
+
+
+def relevance_gate(job: dict, score: int) -> tuple[bool, str]:
+    """Strictly decide whether a scored job should be shown in the email."""
+    text = _text(job)
+    title = _title(job)
+    source = job.get("source", "")
+
+    if _contains_any(title, HARD_EXCLUDE_TITLE_KEYWORDS):
+        return False, "hard_exclude_title"
+    if _contains_any(text, HARD_EXCLUDE_TEXT_KEYWORDS):
+        return False, "hard_exclude_domain"
+
+    if source == "GKV Karriere":
+        if not _contains_any(title, INTERNAL_GKV_STRATEGIC_TITLE_KEYWORDS):
+            return False, "internal_gkv_not_strategic"
+        return is_relevant(score), "below_score" if not is_relevant(score) else "relevant"
+
+    has_sales_role = _contains_any(text, SALES_ROLE_KEYWORDS)
+    has_strategic_role = _contains_any(title, STRATEGIC_ROLE_KEYWORDS)
+    has_domain = _contains_any(text, DOMAIN_KEYWORDS)
+
+    if not (has_sales_role or has_strategic_role):
+        return False, "missing_role"
+    if not has_domain:
+        return False, "missing_domain"
+    if not is_relevant(score):
+        return False, "below_score"
+
+    return True, "relevant"

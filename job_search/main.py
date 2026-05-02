@@ -6,6 +6,7 @@ Run with:  python -m job_search.main
 import json
 import logging
 import os
+from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
@@ -18,7 +19,7 @@ from typing import List, Set
 from .ai_scorer import score_jobs_with_ai
 from .config import EXTERNAL_QUERIES, GKV_QUERIES, IT_DIENSTLEISTER_QUERIES, PROFILE, SEARCH_LOCATIONS
 from .emailer import build_empty_html, build_html, send_email
-from .filter import is_relevant, score_job
+from .filter import relevance_gate, score_job
 from .scrapers.arbeitsagentur import ArbeitsagenturScraper
 from .scrapers.gkv_careers import GKVCareersScraper
 from .scrapers.it_dienstleister import ITDienstleisterScraper
@@ -105,7 +106,6 @@ def main() -> None:
     logger.info("New (not seen before): %d", len(new_jobs))
 
     # Per-source breakdown after dedup
-    from collections import Counter
     src_new = Counter(j["source"] for j in new_jobs)
     src_raw = Counter(j["source"] for j in raw_jobs)
     for src in sorted(src_raw):
@@ -113,31 +113,63 @@ def main() -> None:
                     src, src_raw[src], src_new.get(src, 0),
                     src_raw[src] - src_new.get(src, 0))
 
-    # Step 1: keyword pre-filter (fast, no API cost)
+    diagnostics = {
+        "raw_total": len(raw_jobs),
+        "seen_total": len(seen),
+        "new_total": len(new_jobs),
+        "raw_by_source": dict(src_raw),
+        "new_by_source": dict(src_new),
+        "rejected_by_reason": {},
+        "rejected_by_source": {},
+        "keyword_candidates": 0,
+        "ai_relevant": 0,
+        "final_relevant": 0,
+    }
+
+    # Step 1: keyword pre-filter plus hard relevance gate (fast, no API cost)
     candidates: List[dict] = []
-    filtered_out: Counter = Counter()
+    rejected_by_reason: Counter = Counter()
+    rejected_by_source: Counter = Counter()
     for job in new_jobs:
         s = score_job(job)
-        if is_relevant(s):
+        passes_gate, reason = relevance_gate(job, s)
+        if passes_gate:
             candidates.append({**job, "score": s})
         else:
-            filtered_out[job["source"]] += 1
-            logger.debug("  BELOW SCORE (%2d): [%s] %s @ %s",
-                         s, job["source"], job["title"][:60], job["company"][:30])
-    logger.info("Candidates after keyword filter: %d", len(candidates))
-    for src, cnt in sorted(filtered_out.items()):
-        logger.info("  %-20s filtered out by score: %d", src, cnt)
+            rejected_by_reason[reason] += 1
+            rejected_by_source[job["source"]] += 1
+            logger.debug("  FILTERED (%s, %2d): [%s] %s @ %s",
+                         reason, s, job["source"], job["title"][:60], job["company"][:30])
+    diagnostics["keyword_candidates"] = len(candidates)
+    diagnostics["rejected_by_reason"] = dict(rejected_by_reason)
+    diagnostics["rejected_by_source"] = dict(rejected_by_source)
+    logger.info("Candidates after strict relevance gate: %d", len(candidates))
+    for reason, cnt in sorted(rejected_by_reason.items()):
+        logger.info("  rejected %-26s %d", reason + ":", cnt)
 
-    # Step 2: AI re-scoring with full profile context (uses Claude API if key present)
-    relevant = score_jobs_with_ai(candidates)
+    # Step 2: AI re-scoring with full profile context (uses OpenAI API if key present)
+    ai_scored = score_jobs_with_ai(candidates)
+    diagnostics["ai_relevant"] = len(ai_scored)
 
-    # Re-apply minimum score after AI scoring (AI may lower some scores)
-    relevant = [j for j in relevant if is_relevant(j["score"])]
+    # Re-apply the strict gate after AI scoring (AI may lower or raise some scores)
+    relevant: List[dict] = []
+    post_ai_rejected: Counter = Counter()
+    for job in ai_scored:
+        passes_gate, reason = relevance_gate(job, job["score"])
+        if passes_gate:
+            relevant.append(job)
+        else:
+            post_ai_rejected[f"post_ai_{reason}"] += 1
+    if post_ai_rejected:
+        rejected_by_reason.update(post_ai_rejected)
+        diagnostics["rejected_by_reason"] = dict(rejected_by_reason)
     relevant.sort(key=lambda j: j["score"], reverse=True)
+    diagnostics["final_relevant"] = len(relevant)
     logger.info("Relevant after AI scoring: %d", len(relevant))
 
-    # Update deduplication state (mark all new jobs as seen, not just relevant ones)
-    for job in new_jobs:
+    # Mark only jobs that were actually shown as seen. Rejected jobs may become relevant
+    # later if the profile or scoring logic changes.
+    for job in relevant:
         seen.add(job["id"])
     save_seen(seen)
 
@@ -156,7 +188,7 @@ def main() -> None:
             logger.error("Failed to send email: %s", exc)
     else:
         subject = f"\U0001f4ed Nullmeldung JobSucher | {datetime.now().strftime('%d.%m.%Y')}"
-        html = build_empty_html(PROFILE["name"])
+        html = build_empty_html(PROFILE["name"], diagnostics)
         try:
             send_email(to=recipient, subject=subject, html=html)
             logger.info("Done – null report sent to %s", recipient)

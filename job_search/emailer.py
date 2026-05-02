@@ -38,6 +38,18 @@ _ACTION_STYLE = {
 }
 
 
+def _count_rows(counts: Dict[str, int]) -> str:
+    if not counts:
+        return '<tr><td style="padding:4px 0;color:#6b7280;">Keine</td><td></td></tr>'
+    rows = []
+    for key, value in sorted(counts.items()):
+        rows.append(
+            f'<tr><td style="padding:4px 12px 4px 0;color:#374151;">{key}</td>'
+            f'<td style="padding:4px 0;text-align:right;font-weight:700;color:#111827;">{value}</td></tr>'
+        )
+    return "\n".join(rows)
+
+
 def _job_row(job: Dict) -> str:
     score                = job.get("score", 0)
     label, score_color   = _score_meta(score)
@@ -187,7 +199,7 @@ def build_html(jobs: List[Dict], name: str) -> str:
     <!-- Footer -->
     <p style="text-align:center;margin-top:20px;font-size:11px;color:#9ca3af;">
       Job-Search-Bot &middot; Quellen: Arbeitsagentur &middot; LinkedIn &middot; GKV-Karriereseiten<br>
-      <a href="https://github.com/cgallerhh/JobSucher/actions"
+      <a href="https://github.com/cgallerhh/Jobsucher/actions"
          style="color:#93c5fd;text-decoration:none;">Workflow-Status</a>
     </p>
 
@@ -196,9 +208,22 @@ def build_html(jobs: List[Dict], name: str) -> str:
 </html>"""
 
 
-def build_empty_html(name: str) -> str:
+def build_empty_html(name: str, diagnostics: Dict | None = None) -> str:
     today = datetime.now().strftime("%d.%m.%Y")
     first_name = name.split()[0]
+    diagnostics = diagnostics or {}
+
+    raw_total = diagnostics.get("raw_total", 0)
+    new_total = diagnostics.get("new_total", 0)
+    keyword_candidates = diagnostics.get("keyword_candidates", 0)
+    final_relevant = diagnostics.get("final_relevant", 0)
+    raw_by_source = diagnostics.get("raw_by_source", {})
+    new_by_source = diagnostics.get("new_by_source", {})
+    rejected_by_reason = diagnostics.get("rejected_by_reason", {})
+
+    source_rows = _count_rows(raw_by_source)
+    new_rows = _count_rows(new_by_source)
+    rejected_rows = _count_rows(rejected_by_reason)
 
     return f"""<!DOCTYPE html>
 <html lang="de">
@@ -216,7 +241,7 @@ def build_empty_html(name: str) -> str:
         &#128269; Nullmeldung &mdash; {today}
       </h1>
       <p style="margin:0;font-size:13px;color:#bfdbfe;">
-        Heute wurden keine neuen passenden Stellen gefunden.
+        Heute wurden keine wirklich passenden Stellen gefunden.
       </p>
     </div>
 
@@ -224,17 +249,47 @@ def build_empty_html(name: str) -> str:
                 box-shadow:0 1px 4px rgba(0,0,0,0.07);border:1px solid #e5e7eb;">
       <p style="margin:0 0 12px;font-size:15px;color:#111827;">Hi {first_name},</p>
       <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.6;">
-        der tägliche GitHub-Lauf war erfolgreich, aber es gab heute keine neuen Stellen,
-        die nach Filterung und Bewertung in dein Profil gepasst haben.
+        der tägliche GitHub-Lauf war erfolgreich. Ich zeige dir weiterhin nur Rollen,
+        die sowohl zur Senior-Sales-/Strategie-Ebene als auch zur GKV-, Public-Sector-
+        oder Healthcare-IT-Domäne passen.
       </p>
-      <p style="margin:0;font-size:14px;color:#374151;line-height:1.6;">
-        Du bekommst morgen wieder automatisch ein Update.
-      </p>
+      <div style="margin-top:18px;border-top:1px solid #e5e7eb;padding-top:16px;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <tr>
+            <td style="padding:4px 12px 4px 0;color:#374151;">Gefundene Jobs insgesamt</td>
+            <td style="padding:4px 0;text-align:right;font-weight:700;color:#111827;">{raw_total}</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 12px 4px 0;color:#374151;">Davon neu nach Dublettenprüfung</td>
+            <td style="padding:4px 0;text-align:right;font-weight:700;color:#111827;">{new_total}</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 12px 4px 0;color:#374151;">Nach strengem Relevanzfilter</td>
+            <td style="padding:4px 0;text-align:right;font-weight:700;color:#111827;">{keyword_candidates}</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 12px 4px 0;color:#374151;">Final relevante Jobs</td>
+            <td style="padding:4px 0;text-align:right;font-weight:700;color:#111827;">{final_relevant}</td>
+          </tr>
+        </table>
+      </div>
+      <div style="margin-top:16px;">
+        <div style="font-size:12px;font-weight:800;color:#111827;margin-bottom:6px;">Quellenlauf</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">{source_rows}</table>
+      </div>
+      <div style="margin-top:16px;">
+        <div style="font-size:12px;font-weight:800;color:#111827;margin-bottom:6px;">Neu gefunden</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">{new_rows}</table>
+      </div>
+      <div style="margin-top:16px;">
+        <div style="font-size:12px;font-weight:800;color:#111827;margin-bottom:6px;">Warum nichts angezeigt wurde</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">{rejected_rows}</table>
+      </div>
     </div>
 
     <p style="text-align:center;margin-top:20px;font-size:11px;color:#9ca3af;">
       Job-Search-Bot &middot; tägliche Nullmeldung aktiviert<br>
-      <a href="https://github.com/cgallerhh/JobSucher/actions"
+      <a href="https://github.com/cgallerhh/Jobsucher/actions"
          style="color:#93c5fd;text-decoration:none;">Workflow-Status</a>
     </p>
   </div>
