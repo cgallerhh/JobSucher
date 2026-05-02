@@ -103,8 +103,11 @@ DOMAIN_KEYWORDS = [
     "sgb v",
     "ehealth",
     "digital health",
+    "healthcare",
     "healthcare it",
     "health it",
+    "gesundheit",
+    "gesundheitswesen",
     "gesundheits-it",
     "telematikinfrastruktur",
     "ti 2.0",
@@ -143,8 +146,33 @@ INTERNAL_GKV_STRATEGIC_TITLE_KEYWORDS = [
     "omnichannel",
 ]
 
+INTERNAL_GKV_COMPANY_KEYWORDS = [
+    "krankenkasse",
+    "bkk",
+    "ikk",
+    "aok",
+    "dak",
+    "techniker krankenkasse",
+    "tk ",
+    "hkk",
+    "barmer",
+    "kaufmännische krankenkasse",
+]
+
 
 def _text(job: dict) -> str:
+    return " ".join(
+        [
+            job.get("title", ""),
+            job.get("description", ""),
+            job.get("company", ""),
+            job.get("location", ""),
+            job.get("matched_query", ""),
+        ]
+    ).lower()
+
+
+def _job_text(job: dict) -> str:
     return " ".join(
         [
             job.get("title", ""),
@@ -187,6 +215,8 @@ def is_relevant(score: int) -> bool:
 def relevance_gate(job: dict, score: int) -> tuple[bool, str]:
     """Strictly decide whether a scored job should be shown in the email."""
     text = _text(job)
+    job_text = _job_text(job)
+    query_text = job.get("matched_query", "").lower()
     title = _title(job)
     source = job.get("source", "")
 
@@ -200,13 +230,22 @@ def relevance_gate(job: dict, score: int) -> tuple[bool, str]:
             return False, "internal_gkv_not_strategic"
         return is_relevant(score), "below_score" if not is_relevant(score) else "relevant"
 
-    has_sales_role = _contains_any(text, SALES_ROLE_KEYWORDS)
-    has_strategic_role = _contains_any(title, STRATEGIC_ROLE_KEYWORDS)
-    has_domain = _contains_any(text, DOMAIN_KEYWORDS)
+    company = job.get("company", "").lower()
+    if _contains_any(company, INTERNAL_GKV_COMPANY_KEYWORDS):
+        if not _contains_any(title, INTERNAL_GKV_STRATEGIC_TITLE_KEYWORDS):
+            return False, "internal_gkv_not_strategic"
 
-    if not (has_sales_role or has_strategic_role):
+    has_sales_role = _contains_any(job_text, SALES_ROLE_KEYWORDS)
+    has_strategic_role = _contains_any(title, STRATEGIC_ROLE_KEYWORDS)
+    has_query_role = _contains_any(query_text, SALES_ROLE_KEYWORDS + STRATEGIC_ROLE_KEYWORDS)
+    has_role = has_sales_role or has_strategic_role or has_query_role
+    has_domain = _contains_any(job_text, DOMAIN_KEYWORDS)
+    has_query_domain = _contains_any(query_text, DOMAIN_KEYWORDS)
+    has_effective_domain = has_domain or has_query_domain
+
+    if not has_role:
         return False, "missing_role"
-    if not has_domain:
+    if not has_effective_domain:
         return False, "missing_domain"
     if not is_relevant(score):
         return False, "below_score"

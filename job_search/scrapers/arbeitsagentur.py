@@ -81,6 +81,7 @@ class ArbeitsagenturScraper(BaseScraper):
                         "description": (offer.get("stellenbeschreibung") or "")[:500].strip(),
                         "posted_date": offer.get("aktuelleVeroeffentlichungsdatum", ""),
                         "source": self.SOURCE_NAME,
+                        "matched_query": query,
                     })
 
             except Exception as exc:

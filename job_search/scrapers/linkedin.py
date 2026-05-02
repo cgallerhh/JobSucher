@@ -165,6 +165,7 @@ class LinkedInScraper(BaseScraper):
                                 "description": description,
                                 "posted_date": posted,
                                 "source": self.SOURCE_NAME,
+                                "matched_query": query,
                             }
                         )
 
