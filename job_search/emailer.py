@@ -254,6 +254,7 @@ def build_empty_html(name: str, diagnostics: Dict | None = None) -> str:
     raw_total = diagnostics.get("raw_total", 0)
     new_total = diagnostics.get("new_total", 0)
     keyword_candidates = diagnostics.get("keyword_candidates", 0)
+    ai_candidates = diagnostics.get("ai_candidates", 0)
     final_relevant = diagnostics.get("final_relevant", 0)
     raw_by_source = diagnostics.get("raw_by_source", {})
     new_by_source = diagnostics.get("new_by_source", {})
@@ -304,6 +305,10 @@ def build_empty_html(name: str, diagnostics: Dict | None = None) -> str:
           <tr>
             <td style="padding:4px 12px 4px 0;color:#374151;">Nach strengem Relevanzfilter</td>
             <td style="padding:4px 0;text-align:right;font-weight:700;color:#111827;">{keyword_candidates}</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 12px 4px 0;color:#374151;">Zur KI-Bewertung gegeben</td>
+            <td style="padding:4px 0;text-align:right;font-weight:700;color:#111827;">{ai_candidates}</td>
           </tr>
           <tr>
             <td style="padding:4px 12px 4px 0;color:#374151;">Final relevante Jobs</td>

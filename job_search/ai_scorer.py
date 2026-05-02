@@ -30,6 +30,20 @@ MAX_WORKERS = 5
 MAX_DESC_CHARS = 1500
 
 
+def _parse_json(raw: str) -> dict:
+    raw = raw.strip()
+    if raw.startswith("```"):
+        raw = raw.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        start = raw.find("{")
+        end = raw.rfind("}")
+        if start >= 0 and end > start:
+            return json.loads(raw[start:end + 1])
+        raise
+
+
 def _load_context() -> str:
     """Concatenate all .md files in context/ (except README) into one string."""
     if not CONTEXT_DIR.exists():
@@ -89,6 +103,7 @@ def _call_api(api_key: str, system_prompt: str, job_text: str) -> dict:
         json={
             "model": MODEL,
             "max_tokens": 300,
+            "response_format": {"type": "json_object"},
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": job_text},
@@ -101,9 +116,7 @@ def _call_api(api_key: str, system_prompt: str, job_text: str) -> dict:
     raw = response.json()["choices"][0]["message"]["content"].strip()
     if not raw:
         raise ValueError("Empty response from model")
-    if raw.startswith("```"):
-        raw = raw.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
-    return json.loads(raw)
+    return _parse_json(raw)
 
 
 def _score_single(
@@ -172,6 +185,7 @@ def score_jobs_with_ai(jobs: List[Dict]) -> List[Dict]:
 
     # Parallele Verarbeitung in Original-Reihenfolge
     scored: List[Optional[Dict]] = [None] * len(jobs)
+    require_ai_success = bool(api_key)
 
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
         future_to_idx = {
@@ -183,9 +197,11 @@ def score_jobs_with_ai(jobs: List[Dict]) -> List[Dict]:
             result_job, exc = future.result()
             if exc:
                 logger.warning(
-                    "AI scoring failed for '%s': %s - keeping keyword score",
+                    "AI scoring failed for '%s': %s - suppressing this job for safety",
                     jobs[i].get("title"), exc,
                 )
+                if require_ai_success:
+                    result_job = {**result_job, "score": 0, "ai_action": "Ueberspringen"}
             else:
                 logger.debug(
                     "AI score %d/100 for '%s' - %s",

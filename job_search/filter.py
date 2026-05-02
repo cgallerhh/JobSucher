@@ -159,6 +159,41 @@ INTERNAL_GKV_COMPANY_KEYWORDS = [
     "kaufmännische krankenkasse",
 ]
 
+TRUSTED_ECOSYSTEM_COMPANY_KEYWORDS = [
+    "bitmarck",
+    "arvato",
+    "cgi",
+    "sopra steria",
+    "capgemini",
+    "msg",
+    "dataport",
+    "t-systems",
+    "accenture",
+    "deloitte",
+    "pwc",
+    "kpmg",
+    "ibm",
+    "atruvia",
+    "opta data",
+    "gkv sc",
+]
+
+STRONG_CONTEXT_TITLE_KEYWORDS = [
+    "senior account manager",
+    "senior sales manager",
+    "key account manager",
+    "sales director",
+    "account executive",
+    "business development manager",
+    "client partner",
+    "partner manager",
+    "alliance manager",
+    "commercial lead",
+    "go-to-market",
+    "head of",
+    "director",
+]
+
 
 def _text(job: dict) -> str:
     return " ".join(
@@ -193,7 +228,7 @@ def _contains_any(text: str, keywords: list[str]) -> bool:
 
 def score_job(job: dict) -> int:
     """Return a relevance score 0–100 for a job dict."""
-    text = _text(job)
+    text = _job_text(job)
 
     score = 0
 
@@ -237,11 +272,16 @@ def relevance_gate(job: dict, score: int) -> tuple[bool, str]:
 
     has_sales_role = _contains_any(job_text, SALES_ROLE_KEYWORDS)
     has_strategic_role = _contains_any(title, STRATEGIC_ROLE_KEYWORDS)
-    has_query_role = _contains_any(query_text, SALES_ROLE_KEYWORDS + STRATEGIC_ROLE_KEYWORDS)
-    has_role = has_sales_role or has_strategic_role or has_query_role
+    has_role = has_sales_role or has_strategic_role
     has_domain = _contains_any(job_text, DOMAIN_KEYWORDS)
+    has_trusted_company = _contains_any(company, TRUSTED_ECOSYSTEM_COMPANY_KEYWORDS)
     has_query_domain = _contains_any(query_text, DOMAIN_KEYWORDS)
-    has_effective_domain = has_domain or has_query_domain
+    has_strong_context_title = _contains_any(title, STRONG_CONTEXT_TITLE_KEYWORDS)
+    has_effective_domain = (
+        has_domain
+        or has_trusted_company
+        or (has_query_domain and has_strong_context_title)
+    )
 
     if not has_role:
         return False, "missing_role"

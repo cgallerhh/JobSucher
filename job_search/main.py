@@ -36,6 +36,8 @@ logger = logging.getLogger("job_search")
 
 SEEN_FILE = Path("data/seen_jobs.json")
 MAX_SEEN_ENTRIES = 5000  # keep file size reasonable
+MAX_AI_CANDIDATES = 60
+MAX_EMAIL_JOBS = 25
 
 
 # ── Deduplication helpers ────────────────────────────────────────────────────
@@ -126,6 +128,7 @@ def main() -> None:
         "rejected_by_reason": {},
         "rejected_by_source": {},
         "keyword_candidates": 0,
+        "ai_candidates": 0,
         "ai_relevant": 0,
         "final_relevant": 0,
     }
@@ -151,6 +154,16 @@ def main() -> None:
     for reason, cnt in sorted(rejected_by_reason.items()):
         logger.info("  rejected %-26s %d", reason + ":", cnt)
 
+    if len(candidates) > MAX_AI_CANDIDATES:
+        candidates.sort(key=lambda j: j["score"], reverse=True)
+        logger.info(
+            "Limiting AI scoring to top %d/%d candidates by keyword score",
+            MAX_AI_CANDIDATES,
+            len(candidates),
+        )
+        candidates = candidates[:MAX_AI_CANDIDATES]
+    diagnostics["ai_candidates"] = len(candidates)
+
     # Step 2: AI re-scoring with full profile context (uses OpenAI API if key present)
     ai_scored = score_jobs_with_ai(candidates)
     diagnostics["ai_relevant"] = len(ai_scored)
@@ -168,6 +181,9 @@ def main() -> None:
         rejected_by_reason.update(post_ai_rejected)
         diagnostics["rejected_by_reason"] = dict(rejected_by_reason)
     relevant.sort(key=lambda j: j["score"], reverse=True)
+    if len(relevant) > MAX_EMAIL_JOBS:
+        logger.info("Limiting email to top %d/%d relevant jobs", MAX_EMAIL_JOBS, len(relevant))
+        relevant = relevant[:MAX_EMAIL_JOBS]
     diagnostics["final_relevant"] = len(relevant)
     logger.info("Relevant after AI scoring: %d", len(relevant))
 
