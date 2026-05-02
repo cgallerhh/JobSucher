@@ -88,6 +88,7 @@ class IndeedScraper(BaseScraper):
                     "description": entry.get("summary", "")[:500].strip(),
                     "posted_date": entry.get("published", ""),
                     "source": self.SOURCE_NAME,
+                    "matched_query": query,
                 })
             return jobs
         except Exception as exc:

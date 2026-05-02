@@ -91,6 +91,7 @@ class StepStoneScraper(BaseScraper):
                             "description": "",
                             "posted_date": "",
                             "source": self.SOURCE_NAME,
+                            "matched_query": query,
                         })
                     except Exception as exc:
                         logger.debug("StepStone card parse error: %s", exc)

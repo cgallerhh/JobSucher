@@ -34,7 +34,9 @@ def _score_meta(score: int):
 _ACTION_STYLE = {
     "Sofort bewerben": "background:#16a34a;color:#fff;",
     "Prüfen":          "background:#d97706;color:#fff;",
+    "Pruefen":         "background:#d97706;color:#fff;",
     "Überspringen":    "background:#e5e7eb;color:#6b7280;",
+    "Ueberspringen":   "background:#e5e7eb;color:#6b7280;",
 }
 
 
@@ -50,6 +52,25 @@ def _count_rows(counts: Dict[str, int]) -> str:
     return "\n".join(rows)
 
 
+def _job_context(job: Dict) -> str:
+    query = job.get("matched_query", "")
+    source = job.get("source", "")
+    if query:
+        return f"Gefunden über „{query}“ bei {source}."
+    return f"Quelle: {source}."
+
+
+def _fit_reason(job: Dict) -> str:
+    ai_reason = job.get("ai_reason", "")
+    if ai_reason:
+        return ai_reason
+    score = job.get("score", 0)
+    query = job.get("matched_query", "")
+    if query:
+        return f"Passt fachlich zum Suchprofil „{query}“ und erreicht Score {score}."
+    return f"Erreicht Score {score} nach Rollen-, Domänen- und Ausschlussfilter."
+
+
 def _job_row(job: Dict) -> str:
     score                = job.get("score", 0)
     label, score_color   = _score_meta(score)
@@ -59,19 +80,22 @@ def _job_row(job: Dict) -> str:
     company              = job.get("company") or "—"
     location             = job.get("location", "")
     url                  = job.get("url", "#")
-    ai_reason            = job.get("ai_reason", "")
     ai_strengths         = job.get("ai_strengths", [])
     ai_concerns          = job.get("ai_concerns", [])
     ai_action            = job.get("ai_action", "")
     posted               = (job.get("posted_date") or "")[:10]
+    context              = _job_context(job)
+    fit_reason           = _fit_reason(job)
 
-    # AI-Bewertungsblock: Zusammenfassung + Stärken + Bedenken + Handlungsempfehlung
-    ai_parts = []
-    if ai_reason:
-        ai_parts.append(
-            f'<div style="margin-top:6px;font-size:12px;color:#6366f1;font-style:italic;">'
-            f'&#129302; {ai_reason}</div>'
-        )
+    # Bewertungsblock: AI-Kommentar, plus Fallback aus Suchkontext und Score.
+    ai_parts = [
+        f'<div style="font-size:12px;color:#111827;font-weight:700;margin-bottom:4px;">'
+        f'Bewertung</div>',
+        f'<div style="font-size:12px;color:#374151;line-height:1.45;">'
+        f'<strong>Worum es geht:</strong> {context}</div>',
+        f'<div style="font-size:12px;color:#374151;line-height:1.45;margin-top:3px;">'
+        f'<strong>Warum passend:</strong> {fit_reason}</div>',
+    ]
     if ai_strengths:
         badges = "&nbsp;".join(
             f'<span style="background:#dcfce7;color:#166534;border-radius:3px;'
@@ -80,12 +104,21 @@ def _job_row(job: Dict) -> str:
         )
         ai_parts.append(f'<div style="margin-top:4px;line-height:1.8;">{badges}</div>')
     if ai_concerns:
+        ai_parts.append(
+            '<div style="font-size:12px;color:#374151;line-height:1.45;margin-top:3px;">'
+            '<strong>Worauf achten:</strong></div>'
+        )
         badges = "&nbsp;".join(
             f'<span style="background:#fff7ed;color:#9a3412;border-radius:3px;'
             f'padding:2px 6px;font-size:10px;font-weight:600;">&#9888; {c}</span>'
             for c in ai_concerns
         )
         ai_parts.append(f'<div style="margin-top:3px;line-height:1.8;">{badges}</div>')
+    else:
+        ai_parts.append(
+            '<div style="font-size:12px;color:#6b7280;line-height:1.45;margin-top:3px;">'
+            '<strong>Worauf achten:</strong> Keine offensichtlichen Ausschlussgründe im Vorfilter.</div>'
+        )
     if ai_action:
         style = _ACTION_STYLE.get(ai_action, "background:#e5e7eb;color:#6b7280;")
         ai_parts.append(
@@ -93,7 +126,12 @@ def _job_row(job: Dict) -> str:
             f'<span style="{style}border-radius:4px;padding:2px 8px;'
             f'font-size:10px;font-weight:700;">{ai_action}</span></div>'
         )
-    ai_html = "\n".join(ai_parts)
+    ai_html = (
+        '<div style="margin-top:8px;background:#f8fafc;border:1px solid #e5e7eb;'
+        'border-radius:8px;padding:9px 11px;">'
+        + "\n".join(ai_parts)
+        + "</div>"
+    )
 
     posted_html = (
         f'<span style="color:#9ca3af;font-size:11px;"> &middot; {posted}</span>'
@@ -198,7 +236,7 @@ def build_html(jobs: List[Dict], name: str) -> str:
 
     <!-- Footer -->
     <p style="text-align:center;margin-top:20px;font-size:11px;color:#9ca3af;">
-      Job-Search-Bot &middot; Quellen: Arbeitsagentur &middot; LinkedIn &middot; GKV-Karriereseiten<br>
+      Job-Search-Bot &middot; Quellen: Arbeitsagentur &middot; LinkedIn &middot; Indeed &middot; StepStone &middot; GKV-Karriereseiten<br>
       <a href="https://github.com/cgallerhh/Jobsucher/actions"
          style="color:#93c5fd;text-decoration:none;">Workflow-Status</a>
     </p>

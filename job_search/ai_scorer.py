@@ -68,7 +68,7 @@ Antworte AUSSCHLIESSLICH mit minimalem JSON (kein Markdown, kein Kommentar):
 {{"score": <int 0-100>, "reason": "<max 120 Zeichen Zusammenfassung auf Deutsch>", "strengths": ["<Staerke 1>", "<Staerke 2>"], "concerns": ["<Bedenken 1>"], "action": "<Sofort bewerben|Pruefen|Ueberspringen>"}}
 
 Regeln:
-- reason: Praegnante Gesamtbewertung in max. 120 Zeichen
+- reason: Erklaere kurz, worum es in der Rolle geht und warum sie passt oder kritisch ist.
 - strengths: 1-3 konkrete Treffer aus Profil/Kriterien
 - concerns: 0-2 echte Bedenken; leere Liste [] wenn keine
 - action: "Sofort bewerben" bei score >= 70, "Pruefen" bei score 40-69, "Ueberspringen" bei score < 40"""
@@ -118,6 +118,7 @@ def _score_single(
             f"Unternehmen: {job.get('company', '')}\n"
             f"Standort: {job.get('location', '')}\n"
             f"Stellenbeschreibung: {job.get('description', '')[:MAX_DESC_CHARS]}\n"
+            f"Gefunden über Suchanfrage: {job.get('matched_query', '')}\n"
             f"Quelle: {job.get('source', '')}"
         )
         result = _call_api(api_key, system_prompt, job_text)

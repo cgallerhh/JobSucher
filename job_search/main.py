@@ -22,8 +22,10 @@ from .emailer import build_empty_html, build_html, send_email
 from .filter import relevance_gate, score_job
 from .scrapers.arbeitsagentur import ArbeitsagenturScraper
 from .scrapers.gkv_careers import GKVCareersScraper
+from .scrapers.indeed import IndeedScraper
 from .scrapers.it_dienstleister import ITDienstleisterScraper
 from .scrapers.linkedin import LinkedInScraper
+from .scrapers.stepstone import StepStoneScraper
 
 logging.basicConfig(
     level=logging.INFO,
@@ -70,15 +72,17 @@ def main() -> None:
 
     raw_jobs: List[dict] = []
 
-    # Arbeitsagentur: alle konfigurierten Locations
+    # External job boards: all configured locations
+    external_scrapers = [ArbeitsagenturScraper, IndeedScraper, StepStoneScraper]
     for location in SEARCH_LOCATIONS:
-        scraper = ArbeitsagenturScraper()
-        try:
-            jobs = scraper.fetch(EXTERNAL_QUERIES, location)
-            logger.info("%s [%s] → %d jobs fetched", scraper.SOURCE_NAME, location, len(jobs))
-            raw_jobs.extend(jobs)
-        except Exception as exc:
-            logger.error("%s [%s] scraper failed: %s", scraper.SOURCE_NAME, location, exc)
+        for scraper_cls in external_scrapers:
+            scraper = scraper_cls()
+            try:
+                jobs = scraper.fetch(EXTERNAL_QUERIES, location)
+                logger.info("%s [%s] → %d jobs fetched", scraper.SOURCE_NAME, location, len(jobs))
+                raw_jobs.extend(jobs)
+            except Exception as exc:
+                logger.error("%s [%s] scraper failed: %s", scraper.SOURCE_NAME, location, exc)
 
     # LinkedIn: nur deutschlandweit (remote) – Hamburg liefert zu wenige Treffer
     linkedin = LinkedInScraper()
