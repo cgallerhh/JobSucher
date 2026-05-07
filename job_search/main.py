@@ -22,6 +22,7 @@ from .config import (
     EXTERNAL_QUERIES,
     GKV_QUERIES,
     IT_DIENSTLEISTER_QUERIES,
+    MIN_EMAIL_SCORE,
     MAX_JOB_AGE_DAYS,
     PROFILE,
     SEARCH_LOCATIONS,
@@ -215,8 +216,10 @@ def main() -> None:
     post_ai_rejected: Counter = Counter()
     for job in ai_scored:
         passes_gate, reason = relevance_gate(job, job["score"])
-        if passes_gate:
+        if passes_gate and job["score"] >= MIN_EMAIL_SCORE:
             relevant.append(job)
+        elif passes_gate:
+            post_ai_rejected["post_ai_below_70"] += 1
         else:
             post_ai_rejected[f"post_ai_{reason}"] += 1
     if post_ai_rejected:

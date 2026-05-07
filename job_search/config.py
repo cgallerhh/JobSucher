@@ -273,6 +273,9 @@ NEGATIVE_KEYWORDS = {
 # Minimum score to include in the daily email
 MIN_SCORE = 25
 
+# Final email threshold after AI scoring / strict matching.
+MIN_EMAIL_SCORE = 70
+
 # Max jobs fetched per query per source (avoid hammering)
 MAX_JOBS_PER_QUERY = 25
 

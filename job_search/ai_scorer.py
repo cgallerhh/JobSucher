@@ -69,12 +69,18 @@ im GKV- und Public-Sector-IT-Markt. Bewerte Stellenanzeigen ausführlich und pr�
 
 BEWERTUNGSSCHEMA (score 0-100):
 - 80-100: Perfekter Match: Sales/Account-Rolle + GKV oder Public Sector IT + Senior-Level
-- 60-79:  Sehr gut: 2 von 3 Kernkriterien erfüllt, klar verwandtes Umfeld
+- 70-79:  Gut: klarer Match, aber mit kleinem Prüfpunkt
+- 60-69:  Nicht für die Mail geeignet: verwandtes Umfeld, aber kein klarer Match
 - 40-59:  Teilweise: IT-Consulting oder Gesundheitswesen ohne direkten GKV-Vertriebsfokus
 - 25-39:  Grenzwertig: entfernt relevant, koennte trotzdem einen Blick wert sein
 - 0-24:   Nicht relevant: falsche Branche, falsches Level oder kein Vertriebsbezug
 
-FESTE AUSSCHLUESSE (score immer 0): adesso SE, HBSN Consulting, Init AG, AOK-Verbund
+ERLAUBTE MATCH-TYPEN:
+1. GKV/Krankenkassenbezug + Account-/Sales-/Business-Development-Rolle
+2. Krankenkasse direkt + CDO/Leitung/Digital-/IT-/Strategie-/Vergabe-Rolle
+3. IT-Dienstleister + Public-Sector-IT oder Health-IT Bezug
+
+FESTE AUSSCHLUESSE (score immer 0): Ausland, adesso SE, HBSN Consulting, Init AG, AOK-Verbund
 
 ---
 
@@ -85,7 +91,7 @@ Regeln:
 - reason: Erklaere kurz, worum es in der Rolle geht und warum sie passt oder kritisch ist.
 - strengths: 1-3 konkrete Treffer aus Profil/Kriterien
 - concerns: 0-2 echte Bedenken; leere Liste [] wenn keine
-- action: "Sofort bewerben" bei score >= 70, "Pruefen" bei score 40-69, "Ueberspringen" bei score < 40"""
+- action: "Sofort bewerben" bei score >= 80, "Pruefen" bei score 70-79, "Ueberspringen" bei score < 70"""
 
 
 def _headers(api_key: str) -> dict:
