@@ -298,14 +298,12 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "https://linkdapi.com/api/v1/jobs/search",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
+        "url": "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
             {
-              "name": "keyword",
+              "name": "keywords",
               "value": "={{ $json.queries }}"
             },
             {
@@ -313,8 +311,16 @@
               "value": "Germany"
             },
             {
-              "name": "timePosted",
-              "value": "any"
+              "name": "geoId",
+              "value": "101282230"
+            },
+            {
+              "name": "f_TPR",
+              "value": "r86400"
+            },
+            {
+              "name": "sortBy",
+              "value": "DD"
             },
             {
               "name": "start",
@@ -322,6 +328,7 @@
             }
           ]
         },
+        "responseFormat": "text",
         "options": {
           "batching": {
             "batch": {
@@ -332,23 +339,17 @@
         }
       },
       "id": "li-api",
-      "name": "linkdAPI Jobs",
+      "name": "LinkedIn Guest Jobs",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
         1120,
         800
-      ],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "",
-          "name": "linkdAPI Key"
-        }
-      }
+      ]
     },
     {
       "parameters": {
-        "jsCode": "const result = $input.item.json;\nlet jobs = [];\nif (Array.isArray(result.jobs)) jobs = result.jobs;\nelse if (Array.isArray(result.data)) jobs = result.data;\nelse if (result.data && Array.isArray(result.data.jobs)) jobs = result.data.jobs;\nelse if (result.data && Array.isArray(result.data.items)) jobs = result.data.items;\nelse if (Array.isArray(result.items)) jobs = result.items;\nelse if (Array.isArray(result)) jobs = result;\nreturn { jobs };"
+        "jsCode": "const result = $input.item.json;\nconst html = typeof result === 'string'\n  ? result\n  : (result.body || result.data || result.response || result.html || '');\n\nconst aliases = [\n  'techniker krankenkasse','barmer','dak','dak gesundheit','ikk classic','kkh','sbk','hkk',\n  'bkk firmus','mobil krankenkasse','audi bkk','viactiv','ikk suedwest','ikk sudwest',\n  'hek','pronova bkk','bahn bkk','mkk','meine krankenkasse','big direkt gesund',\n  'mhplus bkk','ikk gesund plus','novitas bkk','vivida bkk','bkk linde',\n  'die innovationskasse','innovationskasse','bosch bkk','ikk brandenburg','ikkbb',\n  'securvita bkk','debeka bkk','salus bkk','r v bkk','ruv bkk',\n  'bkk gildemeister seidensticker','bkk pfalz',\n  'arvato systems','bitmarck','itsc','msg systems','msg','cgi','dataport',\n  'sopra steria','capgemini','fbeta','gkv sc','opta data','optadata'\n];\n\nfunction clean(value) {\n  return String(value || '')\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/&amp;/g, '&')\n    .replace(/&nbsp;/g, ' ')\n    .replace(/&#x27;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nfunction norm(value) {\n  return clean(value)\n    .normalize('NFKD')\n    .replace(/[\\u0300-\\u036f]/g, '')\n    .toLowerCase()\n    .replace(/&/g, ' und ')\n    .replace(/\\+/g, ' ')\n    .replace(/\\b(ag|se|gmbh|mbh|kg|kgaa|eg|ev|gruppe|group|holding|deutschland)\\b/g, ' ')\n    .replace(/[^a-z0-9]+/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nfunction targetMatch(company) {\n  const c = ` ${norm(company)} `;\n  return aliases.some(alias => {\n    const a = norm(alias);\n    if (!a) return false;\n    if (a.length <= 3) return new RegExp(`(^| )${a}( |$)`).test(c);\n    return c.includes(` ${a} `) || (a.length >= 6 && c.includes(a));\n  });\n}\n\nfunction pick(part, cls) {\n  const re = new RegExp(`<[^>]*class=[\"'][^\"']*${cls}[^\"']*[\"'][^>]*>([\\\\s\\\\S]*?)<\\\\/[^>]+>`, 'i');\n  const match = part.match(re);\n  return clean(match && match[1]);\n}\n\nfunction attr(part, name) {\n  const re = new RegExp(`${name}=[\"']([^\"']+)[\"']`, 'i');\n  const match = part.match(re);\n  return match ? clean(match[1]) : '';\n}\n\nconst jobs = [];\nfor (const part of html.split(/<li\\b/i).slice(1)) {\n  const title = pick(part, 'base-search-card__title');\n  const company = pick(part, 'base-search-card__subtitle');\n  if (!title || !company || !targetMatch(company)) continue;\n  const location = pick(part, 'job-search-card__location') || 'Deutschland';\n  const urlMatch = part.match(/<a[^>]+href=[\"']([^\"']+)[\"'][^>]*class=[\"'][^\"']*base-card__full-link/i)\n    || part.match(/<a[^>]+class=[\"'][^\"']*base-card__full-link[^\"']*[\"'][^>]+href=[\"']([^\"']+)[\"']/i)\n    || part.match(/<a[^>]+href=[\"']([^\"']+)[\"']/i);\n  const url = clean(urlMatch && urlMatch[1]).split('?')[0];\n  const posted = attr(part, 'datetime');\n  jobs.push({\n    title,\n    company,\n    location,\n    url,\n    postedAt: posted,\n    description: `LinkedIn target-company match: ${company}`,\n    source: 'LinkedIn'\n  });\n}\n\nreturn { jobs };"
       },
       "id": "li-fix-response",
       "name": "LI: Fix Response",
@@ -759,18 +760,7 @@
       "main": [
         [
           {
-            "node": "linkdAPI Jobs",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "linkdAPI Jobs": {
-      "main": [
-        [
-          {
-            "node": "LI: Fix Response",
+            "node": "LinkedIn Guest Jobs",
             "type": "main",
             "index": 0
           }
@@ -910,6 +900,17 @@
         [
           {
             "node": "E-Mail Digest senden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LinkedIn Guest Jobs": {
+      "main": [
+        [
+          {
+            "node": "LI: Fix Response",
             "type": "main",
             "index": 0
           }

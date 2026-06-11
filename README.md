@@ -1,7 +1,8 @@
 # Job Search Automation
 
 Täglich um 9:00 Uhr (Wochentage) durchsucht dieser Bot automatisch
-**Indeed**, **StepStone** und **LinkedIn** nach passenden Stellen für
+**Arbeitsagentur**, **Indeed**, **StepStone**, **LinkedIn** sowie direkte
+GKV- und IT-Dienstleister-Karriereseiten nach passenden Stellen für
 **Christian Galler** und liefert eine sortierte E-Mail-Übersicht.
 
 ---
@@ -85,9 +86,12 @@ python -m job_search.main
 │   ├── emailer.py                     ← HTML-E-Mail & Gmail-Versand
 │   ├── main.py                        ← Orchestrierung
 │   └── scrapers/
-│       ├── indeed.py                  ← Indeed RSS (zuverlässigste Quelle)
+│       ├── arbeitsagentur.py          ← Bundesagentur-für-Arbeit-API
+│       ├── gkv_careers.py             ← 31 GKV-Karriereseiten
+│       ├── indeed.py                  ← Indeed RSS
+│       ├── it_dienstleister.py        ← GKV-/Public-IT-Dienstleister
 │       ├── stepstone.py               ← StepStone HTML-Scraping
-│       └── linkedin.py                ← LinkedIn Guest API
+│       └── linkedin.py                ← LinkedIn Guest HTML, Zielunternehmen only
 ├── data/seen_jobs.json                ← Deduplication-State (auto-gepflegt)
 ├── requirements.txt
 └── .env.example

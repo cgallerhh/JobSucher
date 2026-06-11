@@ -122,7 +122,7 @@ def main() -> None:
             except Exception as exc:
                 logger.error("%s [%s] scraper failed: %s", scraper.SOURCE_NAME, location, exc)
 
-    # LinkedIn: nur deutschlandweit (remote) – Hamburg liefert zu wenige Treffer
+    # LinkedIn: token-free, Germany-wide, restricted to known target companies
     linkedin = LinkedInScraper()
     try:
         jobs = linkedin.fetch(EXTERNAL_QUERIES, "Deutschland")
