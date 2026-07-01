@@ -94,7 +94,6 @@ POSITIVE_KEYWORDS = {
     "BKK": 15,
     "IKK": 15,
     "DAK": 15,
-    "AOK": 15,
     "TK ": 10,
     "Public Sector": 15,
     "öffentlicher Sektor": 15,
@@ -139,6 +138,13 @@ POSITIVE_KEYWORDS = {
     "Telematikinfrastruktur": 12,
     # Technology
     "Cloud": 8,
+    "Cybersecurity": 10,
+    "Security": 8,
+    "KI": 8,
+    "AI": 8,
+    "Künstliche Intelligenz": 10,
+    "Systeme": 5,
+    "IT-Systeme": 8,
     "BITMARCK": 15,
     "iskv": 12,
     "RPA": 8,
@@ -206,7 +212,6 @@ POSITIVE_KEYWORDS = {
     "Chief of Staff": 18,
     "Referent Vorstand": 18,
     # Known companies in the ecosystem
-    "adesso": 8,
     "CGI": 8,
     "IBM": 6,
     "Sopra Steria": 8,
@@ -222,6 +227,10 @@ POSITIVE_KEYWORDS = {
 
 # Keywords that REDUCE score (keyword → negative points)
 NEGATIVE_KEYWORDS = {
+    "adesso": -100,
+    "adesso SE": -100,
+    "AOK": -100,
+    "AOK-Verbund": -100,
     "INIT AG": -100,    # ehemaliger Arbeitgeber (Übernahmepartner HBSN GmbH)
     "Zeitarbeit": -30,
     "Zeitarbeitnehmer": -30,

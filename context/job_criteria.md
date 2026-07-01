@@ -17,10 +17,13 @@
 - IT-Consulting oder IT-Dienstleistungsunternehmen
 - Bekannte Anbieter im GKV-IT-Umfeld: CGI, IBM, T-Systems, Sopra Steria,
   Atruvia, msg, Capgemini, Deloitte, PwC, KPMG
-- eHealth / Telematikinfrastruktur / DigiG / KRITIS / B3 / KI / GEnAI / Prozessautomatisierung
+- Public-Sector-IT-Sales mit klarem Technologiebezug, z. B. Cloud, KRITIS,
+  NIS2, KI/AI/GenAI, Cybersecurity, Plattformen, IT-Systeme oder digitale Infrastruktur
+- eHealth / Telematikinfrastruktur / DigiG / KRITIS / B3 / KI / GenAI / Prozessautomatisierung
 
 ## Akzeptables Umfeld (nice to have)
-- Breiter Public Sector (Behörden, ÖGD) ohne direkten GKV-Bezug
+- Breiter Public Sector (Behörden, ÖGD) ohne direkten GKV-Bezug, wenn es klar
+  um IT-Sales/BD geht
 - Healthcare generell (wenn IT-Fokus vorhanden)
 - Hybrid oder Remote-Anteil möglich
 
@@ -31,3 +34,5 @@
 - Medizinische / pflegerische Berufe
 - Branchen ohne IT-Bezug
 - Branchen mit "Leistungserbringer-Bezug" und Hersteller von KIS, LIS, RIS 
+- adesso SE
+- AOK-Verbund / AOK-Rollen

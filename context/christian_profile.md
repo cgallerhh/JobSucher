@@ -6,7 +6,7 @@ Spezialisierung: Public Sector IT, komplexe Ausschreibungs- und Vergabeverfahren
 Standort: Hamburg – Remote und Hybrid sind willkommen.
 
 ## Kernkompetenzen
-- GKV-Markt (IKK, BKK, Ersatzkassen, AOK, DAK, TK)
+- GKV-Markt (IKK, BKK, Ersatzkassen, DAK, TK; AOK ausgeschlossen)
 - Öffentliche Ausschreibungen: BID, Tender, BAFO – von Qualifikationsanalyse bis Preisverhandlung
 - Großdeals & Multi-Millionen-Verträge im B2B
 - Key Account Management & C-Level-Verhandlungen

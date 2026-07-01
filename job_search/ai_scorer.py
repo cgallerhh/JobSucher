@@ -79,6 +79,8 @@ ERLAUBTE MATCH-TYPEN:
 1. GKV/Krankenkassenbezug + Account-/Sales-/Business-Development-Rolle
 2. Krankenkasse direkt + CDO/Leitung/Digital-/IT-/Strategie-/Vergabe-Rolle
 3. IT-Dienstleister + Public-Sector-IT oder Health-IT Bezug
+4. Public-Sector-Sales/BD-Rolle mit klarem IT-Kontext, z.B. Cloud, KRITIS, NIS2,
+   KI/AI/GenAI, Cybersecurity, Plattformen, IT-Systeme oder digitale Infrastruktur
 
 FESTE AUSSCHLUESSE (score immer 0): Ausland, adesso SE, HBSN Consulting, Init AG, AOK-Verbund
 

@@ -26,6 +26,10 @@ HARD_EXCLUDE_TITLE_KEYWORDS = [
 ]
 
 HARD_EXCLUDE_TEXT_KEYWORDS = [
+    "adesso",
+    "aok",
+    "aok-verband",
+    "aok verbund",
     "automotive",
     "automobil",
     "autohaus",
@@ -141,7 +145,6 @@ GKV_DOMAIN_KEYWORDS = [
     "bkk",
     "ikk",
     "dak",
-    "aok",
     "tk ",
     "sozialversicherung",
     "sgb v",
@@ -175,14 +178,29 @@ IT_CONTEXT_KEYWORDS = [
     "it-",
     "software",
     "cloud",
+    "cloud services",
+    "cloud-plattform",
+    "souveräne cloud",
+    "souveraene cloud",
+    "kritis",
+    "nis2",
     "data",
     "digital",
     "plattform",
+    "plattformen",
+    "system",
+    "systeme",
+    "it-system",
+    "it-systeme",
+    "infrastruktur",
     "cyber",
     "security",
+    "cybersecurity",
     "sap",
     "microsoft",
     "ki",
+    "künstliche intelligenz",
+    "kuenstliche intelligenz",
     "ai",
     "genai",
     "consulting",
@@ -223,7 +241,6 @@ INTERNAL_GKV_COMPANY_KEYWORDS = [
     "krankenkasse",
     "bkk",
     "ikk",
-    "aok",
     "dak",
     "techniker krankenkasse",
     "tk ",
@@ -483,6 +500,11 @@ def relevance_gate(job: dict, score: int) -> tuple[bool, str]:
         (source == "GKV Karriere" or _contains_any(company, INTERNAL_GKV_COMPANY_KEYWORDS))
         and _contains_any(title, INTERNAL_GKV_STRATEGIC_TITLE_KEYWORDS)
     )
+    is_public_it_sales = (
+        has_account_bd_role
+        and has_public_or_health
+        and has_it_context
+    )
     is_public_or_health_it_service = (
         has_it_service_company
         and has_role
@@ -492,7 +514,12 @@ def relevance_gate(job: dict, score: int) -> tuple[bool, str]:
 
     if not has_role:
         return False, "missing_role"
-    if not (is_gkv_sales or is_internal_gkv_strategy or is_public_or_health_it_service):
+    if not (
+        is_gkv_sales
+        or is_internal_gkv_strategy
+        or is_public_it_sales
+        or is_public_or_health_it_service
+    ):
         return False, "missing_strict_match"
     if not is_relevant(score):
         return False, "below_score"
