@@ -73,6 +73,7 @@ TARGET_ALIASES = {
     "Dataport": ["dataport"],
     "Sopra Steria": ["sopra steria"],
     "Capgemini": ["capgemini"],
+    "Exxeta AG": ["exxeta"],
     "_fbeta GmbH": ["fbeta"],
     "GKV SC GmbH": ["gkv sc"],
     "opta data Gruppe": ["opta data", "optadata"],

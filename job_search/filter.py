@@ -257,6 +257,7 @@ TRUSTED_ECOSYSTEM_COMPANY_KEYWORDS = [
     "capgemini",
     "msg",
     "dataport",
+    "exxeta",
     "t-systems",
     "accenture",
     "deloitte",

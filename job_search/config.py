@@ -217,6 +217,7 @@ POSITIVE_KEYWORDS = {
     "Sopra Steria": 8,
     "Capgemini": 8,
     "msg": 8,
+    "Exxeta": 8,
     "Deloitte": 6,
     "PwC": 6,
     "KPMG": 6,

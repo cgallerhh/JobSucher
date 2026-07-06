@@ -30,9 +30,27 @@
 |---|---|---|
 | **Capgemini** | Health-Vertical, GKV-Projekte | Stärker SAP-lastig — Narrativ vorbereiten |
 | **Sopra Steria** | Public Services & Health | Öffentliche Ausschreibungen als Kerngeschäft — gute BID-Passung |
+| **Exxeta** | Public Healthcare, digitale Transformation, IT-/Beratungs-Sales | Aktiv tracken; Treffer wie Public Healthcare KAM sind klare Passung |
 | **Bearing Point** | GKV-Beratung, Regulatorik | Eher strategische Beratung, weniger Sales-Rolle |
 | **Accenture** | Health Payer Segment | Großkonzern, längere Entscheidungswege |
 | **ATRUVIA** | Volksbanken-IT, zunehmend GKV-Schnittstellen | Nischenpfad, aber wachsend |
+
+### Noch nicht aktiv direkt getrackte Exxeta-artige Anbieter
+
+Diese Unternehmen passen fachlich ähnlich, sind aber aktuell nicht als eigene Karriereseitenquelle angebunden. Sie können über Arbeitsagentur/LinkedIn zufällig auftauchen, werden aber nicht gezielt verfolgt:
+
+| Unternehmen | Warum interessant |
+|---|---|
+| **CGM / CompuGroup Medical** | eHealth, Healthcare-IT, mögliche Kassen-/TI-Rollen |
+| **T-Systems / Telekom Health** | Public/Health/Defense/Cloud-Großkundensales |
+| **IBM Consulting** | Health & Public Sector Consulting |
+| **BearingPoint** | Public Services, Health, Sozialversicherung, Regulatorik |
+| **Accenture** | Health/Public Sector, große Transformationsprogramme |
+| **ATRUVIA** | regulierte IT-Plattformen, genossenschaftliches Umfeld |
+| **Bechtle** | Public Sector, Cloud, Security, KRITIS-naher Vertrieb |
+| **Computacenter** | Public Sector, Infrastruktur, Workplace/Cloud/Security |
+| **NTT DATA** | Public Sector, Health, Cybersecurity, Systemintegration |
+| **Materna** | Public Sector Digitalisierung, Verwaltungs-IT |
 
 ---
 

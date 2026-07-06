@@ -9,6 +9,8 @@ Dieselbe Strategie wie GKVCareersScraper:
 import hashlib
 import json
 import logging
+import math
+import re
 import time
 import warnings
 from typing import Dict, List, Optional, Tuple
@@ -42,6 +44,8 @@ IT_CAREER_PAGES: List[Tuple[str, str]] = [
     ("Sopra Steria",    "https://careers.soprasteria.de/jobs"),
     # Capgemini: gefilterte Jobs-Seite Deutschland
     ("Capgemini",       "https://www.capgemini.com/de-de/karriere/jobs/?country_code=de-de&country_name=Germany&size=15"),
+    # Exxeta: Public/Healthcare-Sales über öffentliches Job-Shop/Typesense-API
+    ("Exxeta AG",       "https://jobs.exxeta.com/sales-account-management"),
     # Tier 4 – Spezialisten & Mittelständler
     ("_fbeta GmbH",     "https://fbeta.de/karriere/"),
     # GKV SC GmbH: korrekte Domain www1.gkvsc.de
@@ -56,6 +60,14 @@ _JOB_SUBPAGE_PATTERNS = [
     "job-board", "jobboerse", "jobbörse", "vakanz", "vakanten",
     "/jobs/", "karriere/jobs", "stellenportal", "job-portal",
 ]
+
+MY_JOB_SHOP_CONFIG = {
+    "jobs.exxeta.com": {
+        "tenant_id": "exxeta",
+        "vanity": "exxeta",
+        "job_shop_id": "18b34294-327a-5483-8823-395c5649f434",
+    },
+}
 
 
 class ITDienstleisterScraper(BaseScraper):
@@ -90,6 +102,12 @@ class ITDienstleisterScraper(BaseScraper):
     # ── per-page scraping ────────────────────────────────────────────────────
 
     def _scrape(self, company: str, url: str) -> List[Dict]:
+        # Talentsconnect/Job-Shop pages render job cards client-side. Use the
+        # public active-offers search endpoint exposed by the page instead.
+        jobs = self._from_my_job_shop_api(company, url)
+        if jobs:
+            return jobs
+
         resp = self.get(url)
         soup = BeautifulSoup(resp.text, "lxml")
 
@@ -166,13 +184,120 @@ class ITDienstleisterScraper(BaseScraper):
         if not loc:
             return ""
         if isinstance(loc, list):
-            loc = loc[0]
+            parts = [self._location_from_jsonld({**posting, "jobLocation": item}) for item in loc]
+            return ", ".join(dict.fromkeys(part for part in parts if part))
         if isinstance(loc, dict):
             addr = loc.get("address") or {}
             if isinstance(addr, dict):
                 return addr.get("addressLocality") or addr.get("addressRegion") or ""
             return str(addr)
         return ""
+
+    def _from_my_job_shop_api(self, company: str, page_url: str) -> List[Dict]:
+        cfg = MY_JOB_SHOP_CONFIG.get(urlparse(page_url).netloc)
+        if not cfg:
+            return []
+
+        tenant_id = cfg["tenant_id"]
+        vanity = cfg["vanity"]
+        job_shop_id = cfg["job_shop_id"]
+        api_base = "https://api.my-job-shop.com"
+
+        key_resp = self.session.get(
+            f"{api_base}/api/offer/v1/search/api-key",
+            headers={"Accept": "application/json", "X-Tenant-Id": tenant_id},
+            params={"filter": f"backoffice_vanity:{vanity}"},
+            timeout=20,
+        )
+        key_resp.raise_for_status()
+        api_key = (key_resp.json() or {}).get("key")
+        if not api_key:
+            logger.warning("%s: Job-Shop API key missing", company)
+            return []
+
+        def fetch_page(page: int) -> dict:
+            body = {
+                "searches": [
+                    {
+                        "collection": "offers",
+                        "q": "*",
+                        "filter_by": (
+                            f"tenant_id:={tenant_id}"
+                            f"&&backoffice_vanity:={vanity}"
+                            "&&status:=ACTIVE"
+                        ),
+                        "page": page,
+                        "per_page": 250,
+                    }
+                ]
+            }
+            resp = self.session.post(
+                f"{api_base}/api/typesense/multi_search",
+                headers={
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "X-Tenant-Id": tenant_id,
+                    "X-JobShop-Id": job_shop_id,
+                    "X-Typesense-Api-Key": api_key,
+                },
+                data=json.dumps(body),
+                timeout=20,
+            )
+            resp.raise_for_status()
+            return (resp.json().get("results") or [{}])[0]
+
+        result = fetch_page(1)
+        if result.get("error"):
+            logger.warning("%s: Job-Shop search failed: %s", company, result["error"])
+            return []
+
+        hits = result.get("hits") or []
+        found = result.get("found") or len(hits)
+        pages = min(math.ceil(found / 250), 5)
+        for page in range(2, pages + 1):
+            hits.extend(fetch_page(page).get("hits") or [])
+
+        jobs: List[Dict] = []
+        for hit in hits:
+            doc = hit.get("document") or {}
+            title = (doc.get("title") or "").strip()
+            if not title:
+                continue
+
+            link = doc.get("url") or doc.get("application_url") or page_url
+            location = self._stringify_list(doc.get("location")) or "Deutschland"
+            description = self._job_shop_description(doc)
+            job_id = doc.get("offer_uuid") or doc.get("id") or hashlib.md5(link.encode()).hexdigest()
+
+            jobs.append({
+                "id": job_id,
+                "title": title,
+                "company": company,
+                "location": location,
+                "url": link,
+                "description": description[:500],
+                "posted_date": "",
+                "source": self.SOURCE_NAME,
+            })
+
+        return jobs
+
+    def _job_shop_description(self, doc: dict) -> str:
+        html_parts = [
+            self._stringify_list(doc.get("department")),
+            doc.get("introduction") or "",
+            doc.get("description") or "",
+            doc.get("expectation") or "",
+            doc.get("offering") or "",
+        ]
+        raw = " ".join(part for part in html_parts if part)
+        text = BeautifulSoup(raw, "lxml").get_text(" ", strip=True)
+        return re.sub(r"\s+", " ", text)
+
+    def _stringify_list(self, value) -> str:
+        if isinstance(value, list):
+            return ", ".join(str(item) for item in value if item)
+        return str(value or "")
 
     def _find_jobs_subpage(self, soup: BeautifulSoup, base_url: str) -> Optional[str]:
         base_domain = urlparse(base_url).netloc
