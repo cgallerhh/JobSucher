@@ -1,87 +1,54 @@
-# Zielunternehmen
+# Zielunternehmen und Prozesssperren, Stand 03.08.2026
 
-<!--
-  Optional: Unternehmen, bei denen du dich besonders interessierst.
-  Eine Stelle von diesen Unternehmen sollte höher bewertet werden.
-  Ergänze aus deinen Claude-Projekt-PDFs weitere relevante Anbieter.
--->
+## A-Prioritaet
 
-## TIER 1 — GKV-fokussierte IT-Dienstleister (aktiver Vertrieb)
+1. DeepL: Enterprise Account Executive Public Sector, Laender Nord und
+   Sozialversicherungen.
+2. SAP: Senior Account Executive Healthcare Industry Germany, Hamburg bzw.
+   virtuelles Deutschland-Modell.
+3. ZOTZ|KLIMAS: Senior Business Development mit GKV-/PKV-Partnerschaften;
+   Mandat, Gehalt und Remote-Modell frueh klaeren.
+4. FREENOW: Senior Business Development Health; nur passend, wenn drei
+   Hamburger Buerotage akzeptiert werden.
 
-*Unternehmen mit eigenem GKV-Produktportfolio, wo Brancheninsider-Vertrieb der Kernwert ist.*
+## Bereits beworben
 
-| Unternehmen | Profil | Relevanz |
-|---|---|---|
-| **Arvato Systems** | Gütersloh, GKV IT-Plattformen | Aktiv laufend — Prio 1 |
-| **msg systems** | Ismaning, GKV-Branchenlösungen (msg.Life, msg.GKV) | Höchste strategische Passung: BITMARCK-Umfeld, BID-Prozesse |
-| **BITMARCK** | Essen, genossenschaftlicher IT-Dienstleister der BKK/IKK/EK | Kernmarkt, direkte Branchenverankerung |
-| **Dataport** | Hamburg/Kiel, öffentliche IT, zunehmend GKV/ÖGD | Passung über ÖGD-Erfahrung und öffentliche Ausschreibungen |
-| **CGM (CompuGroup Medical)** | Koblenz, eHealth, Praxissoftware, zunehmend Kassen | Wachstumsfeld DigiG/ePA |
-| **T-Systems** | Frankfurt, Telekom-Tochter mit Health-Vertical | Großkunden-KAM-Rollen im GKV-Segment |
-| **IBM Consulting** | Health & Insurance Vertical | Weniger BID-nah, aber relevant für strategische Beratungspositionen |
+- Acture: Bewerbung am 03.08.2026 versandt, Eingang bestaetigt. Nicht erneut als
+  neue Stelle melden.
 
----
+## A2: vor Bewerbung qualifizieren
 
-## TIER 2 — Beratung & Systemintegration mit GKV-Fokus
+- Genesys: Senior Account Executive Public & Healthcare.
+- Veeam: Senior Account Executive Enterprise Public Sector.
+- Salesforce: Named Account Executive Insurance; GKV-Accounts und
+  Hamburg/Remote muessen bestaetigt werden.
+- Thieme: Partner Manager Content as a Service; Senioritaet und Paket pruefen.
 
-*Unternehmen ohne eigene GKV-Software, aber mit aktiven Kundenprojekten im Segment.*
+## Kontrollierte Transferpipeline
 
-| Unternehmen | Profil | Hinweis |
-|---|---|---|
-| **Capgemini** | Health-Vertical, GKV-Projekte | Stärker SAP-lastig — Narrativ vorbereiten |
-| **Sopra Steria** | Public Services & Health | Öffentliche Ausschreibungen als Kerngeschäft — gute BID-Passung |
-| **Exxeta** | Public Healthcare, digitale Transformation, IT-/Beratungs-Sales | Aktiv tracken; Treffer wie Public Healthcare KAM sind klare Passung |
-| **Bearing Point** | GKV-Beratung, Regulatorik | Eher strategische Beratung, weniger Sales-Rolle |
-| **Accenture** | Health Payer Segment | Großkonzern, längere Entscheidungswege |
-| **ATRUVIA** | Volksbanken-IT, zunehmend GKV-Schnittstellen | Nischenpfad, aber wachsend |
+SoftwareOne, Amazon Web Services, Camunda, Public Cloud Group, AppZen, Gartner,
+SnapLogic, Veeam Enterprise, BLP Digital, Ashby, 360Learning und Conceptboard.
+Diese Firmen sind keine automatische Empfehlung: Rolle, Senioritaet, Standort,
+Gehalt und Netzwerkannahmen bleiben zwingende Gates.
 
-### Noch nicht aktiv direkt getrackte Exxeta-artige Anbieter
+## Verbindlich ausgeschlossen oder geschlossen
 
-Diese Unternehmen passen fachlich ähnlich, sind aber aktuell nicht als eigene Karriereseitenquelle angebunden. Sie können über Arbeitsagentur/LinkedIn zufällig auftauchen, werden aber nicht gezielt verfolgt:
+- Exxeta: anderer Kandidat; keine Reaktivierung ohne substanziell neue Rolle und
+  ausdrueckliche Nutzerentscheidung.
+- HMM Deutschland, adesso, HBSN/INIT, hcVISION, puntus, BITMARCK, Arvato
+  Systems, d.velop, FERCHAU, Faktor D/x-tention, IQVIA/DAVASO/COMLINE,
+  act digital, Cloudflight und KWSoft.
+- NICE, Cognigy, smart2success, aquinet, IPSWAYS, GKV Informatik, Convista und
+  AGORUM.
+- AOK-Arbeitgeber beziehungsweise AOK-Verbund.
+- atacama nur dann, wenn OSCARE-Erfahrung zwingend vorausgesetzt wird.
 
-| Unternehmen | Warum interessant |
-|---|---|
-| **CGM / CompuGroup Medical** | eHealth, Healthcare-IT, mögliche Kassen-/TI-Rollen |
-| **T-Systems / Telekom Health** | Public/Health/Defense/Cloud-Großkundensales |
-| **IBM Consulting** | Health & Public Sector Consulting |
-| **BearingPoint** | Public Services, Health, Sozialversicherung, Regulatorik |
-| **Accenture** | Health/Public Sector, große Transformationsprogramme |
-| **ATRUVIA** | regulierte IT-Plattformen, genossenschaftliches Umfeld |
-| **Bechtle** | Public Sector, Cloud, Security, KRITIS-naher Vertrieb |
-| **Computacenter** | Public Sector, Infrastruktur, Workplace/Cloud/Security |
-| **NTT DATA** | Public Sector, Health, Cybersecurity, Systemintegration |
-| **Materna** | Public Sector Digitalisierung, Verwaltungs-IT |
+Geschlossene Firmen duerfen nicht wegen eines guten Titels, eines Keywords oder
+eines KI-Scores wieder in die E-Mail gelangen. BITMARCK darf weiterhin als
+fachlicher Kontext in einer Rolle bei einem anderen Arbeitgeber positiv wirken.
 
----
+## Nur bei wirklich neuer Originalrolle erneut pruefen
 
-## TIER 3 — Krankenkassen direkt (ohne AOK)
-
-*Rollen im internen Vertrieb, Marktentwicklung oder strategischen Partnermanagement.*
-
-| Segment | Kassen | Einstiegspunkt |
-|---|---|---|
-| **Ersatzkassen** | TK, BARMER, DAK-Gesundheit, KKH, HEK, hkk | DAK-Vorgeschichte nutzen — Alumni-Netzwerk aktiv ansprechen |
-| **BKK** | BKK VBU, VIACTIV, BKK ProVita, BKK24, Siemens BKK | Kleinere Strukturen, schnellere Entscheidungen |
-| **IKK** | IKK classic, IKK Brandenburg/Berlin, IKK Südwest | Unterversorgt mit Vertriebsprofilen — Opportunity |
-| **Knappschaft** | Deutsche Rentenversicherung Knappschaft-Bahn-See | Sonderstruktur, eigenes IT-Ökosystem |
-
----
-
-## Ausschlüsse (fest)
-
-| Unternehmen | Grund |
-|---|---|
-| adesso SE | Aufhebungsvertrag |
-| HBSN Consulting | Vorgänger-Arbeitgeber |
-| Init AG | HBSN-Käufer |
-| AOK-Verbund | Explizit ausgeschlossen |
-
----
-
-## Empfohlene Bearbeitungsreihenfolge
-
-1. **Arvato Systems** — läuft, Telefonat vorbereiten
-2. **msg systems** — höchste Profilpassung, proaktive LinkedIn-Ansprache
-3. **BITMARCK** — genossenschaftliche Struktur, direkte Marktnähe
-4. **DAK-Alumni-Netzwerk** — interne Rollen oder Empfehlungen über alte Kontakte
-5. **Sopra Steria / Dataport** — BID-Stärke optimal positionierbar
+NTT DATA, Zscaler, DORA, HPE, Philips, WEX, AOK connect sowie Deutsche
+Telekom/T-Systems. Eine neue konkrete Anzeige darf geprueft werden; alte
+Bewerbungs- oder Initiativkanaele sind nicht aktiv.

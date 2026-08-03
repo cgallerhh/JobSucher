@@ -19,12 +19,14 @@ from typing import List, Set
 
 from .ai_scorer import score_jobs_with_ai
 from .config import (
+    BA_QUERIES,
     EXTERNAL_QUERIES,
     GKV_QUERIES,
     IT_DIENSTLEISTER_QUERIES,
     MIN_EMAIL_SCORE,
     MAX_JOB_AGE_DAYS,
     PROFILE,
+    PROFILE_VERSION,
     SEARCH_LOCATIONS,
 )
 from .emailer import build_empty_html, build_html, send_email
@@ -54,7 +56,22 @@ MAX_EMAIL_JOBS = 25
 def load_seen() -> Set[str]:
     if SEEN_FILE.exists():
         try:
-            return set(json.loads(SEEN_FILE.read_text()))
+            data = json.loads(SEEN_FILE.read_text())
+            if isinstance(data, dict):
+                if data.get("profile_version") != PROFILE_VERSION:
+                    logger.info(
+                        "Search profile changed (%s -> %s); re-evaluating current jobs",
+                        data.get("profile_version", "unknown"),
+                        PROFILE_VERSION,
+                    )
+                    return set()
+                return set(data.get("job_ids", []))
+            if isinstance(data, list):
+                logger.info(
+                    "Legacy seen-job state found; re-evaluating once for profile %s",
+                    PROFILE_VERSION,
+                )
+                return set()
         except Exception:
             pass
     return set()
@@ -63,8 +80,9 @@ def load_seen() -> Set[str]:
 def save_seen(seen: Set[str]) -> None:
     SEEN_FILE.parent.mkdir(parents=True, exist_ok=True)
     # Keep only the most recent MAX_SEEN_ENTRIES to prevent unbounded growth
-    trimmed = list(seen)[-MAX_SEEN_ENTRIES:]
-    SEEN_FILE.write_text(json.dumps(trimmed, indent=2))
+    trimmed = sorted(seen)[-MAX_SEEN_ENTRIES:]
+    state = {"profile_version": PROFILE_VERSION, "job_ids": trimmed}
+    SEEN_FILE.write_text(json.dumps(state, indent=2) + "\n")
 
 
 def parse_posted_date(value: str):
@@ -105,7 +123,7 @@ def main() -> None:
 
     agnostic_queries = {
         "GKV Karriere":     GKV_QUERIES,
-        "IT Dienstleister": IT_DIENSTLEISTER_QUERIES,
+        "Zielunternehmen":  IT_DIENSTLEISTER_QUERIES,
     }
 
     raw_jobs: List[dict] = []
@@ -116,7 +134,8 @@ def main() -> None:
         for scraper_cls in external_scrapers:
             scraper = scraper_cls()
             try:
-                jobs = scraper.fetch(EXTERNAL_QUERIES, location)
+                queries = BA_QUERIES if scraper_cls is ArbeitsagenturScraper else EXTERNAL_QUERIES
+                jobs = scraper.fetch(queries, location)
                 logger.info("%s [%s] → %d jobs fetched", scraper.SOURCE_NAME, location, len(jobs))
                 raw_jobs.extend(jobs)
             except Exception as exc:

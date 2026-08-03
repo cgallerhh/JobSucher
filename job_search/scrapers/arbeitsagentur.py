@@ -1,5 +1,5 @@
 """
-Bundesagentur für Arbeit – offizielle REST-API v4.
+Bundesagentur für Arbeit – Jobsuche REST-API v6.
 Authentifizierung: X-API-Key Header (kein OAuth mehr).
 
 Doku: https://jobsuche.api.bund.dev
@@ -8,12 +8,12 @@ import logging
 import time
 from typing import Dict, List
 
-from ..config import MAX_JOBS_PER_QUERY
+from ..config import MAX_JOB_AGE_DAYS, MAX_JOBS_PER_QUERY
 from .base import BaseScraper
 
 logger = logging.getLogger(__name__)
 
-BASE_URL = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs"
+BASE_URL = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs"
 API_KEY  = "jobboerse-jobsuche"
 
 
@@ -39,9 +39,12 @@ class ArbeitsagenturScraper(BaseScraper):
             try:
                 params: dict = {
                     "was": query,
-                    "veroeffentlichtseit": "3",
+                    "veroeffentlichtseit": str(MAX_JOB_AGE_DAYS),
                     "size": str(MAX_JOBS_PER_QUERY),
                     "page": "1",
+                    "angebotsart": "1",
+                    "pav": "false",
+                    "zeitarbeit": "false",
                 }
                 if location.lower() != "deutschland":
                     params["wo"] = location
@@ -56,30 +59,54 @@ class ArbeitsagenturScraper(BaseScraper):
                     )
                     continue
 
-                for offer in resp.json().get("stellenangebote") or []:
-                    ref = offer.get("refnr", "")
-                    job_id = ref or f"{offer.get('titel','')}{offer.get('arbeitgeber','')}"
+                payload = resp.json()
+                offers = payload.get("ergebnisliste") or payload.get("stellenangebote") or []
+                for offer in offers:
+                    ref = offer.get("referenznummer") or offer.get("refnr", "")
+                    title = offer.get("stellenangebotsTitel") or offer.get("titel", "")
+                    company = offer.get("firma") or offer.get("arbeitgeber", "")
+                    job_id = ref or f"{title}{company}"
                     if job_id in seen:
                         continue
                     seen.add(job_id)
 
-                    url = offer.get("externeUrl") or (
+                    url = offer.get("externeURL") or offer.get("externeUrl") or (
                         f"https://www.arbeitsagentur.de/jobsuche/jobdetail/{ref}"
                         if ref else ""
                     )
-                    arbeitsort = offer.get("arbeitsort", {})
-                    job_location = ", ".join(
-                        filter(None, [arbeitsort.get("ort"), arbeitsort.get("region")])
-                    ) or location
+                    locations = offer.get("stellenlokationen") or []
+                    address = (locations[0].get("adresse") if locations else None) or {}
+                    legacy_location = offer.get("arbeitsort") or {}
+                    job_location = ", ".join(filter(None, [
+                        address.get("ort") or legacy_location.get("ort"),
+                        address.get("region") or legacy_location.get("region"),
+                    ])) or location
+
+                    salary_from = offer.get("gehaltsspanneVon")
+                    salary_to = offer.get("gehaltsspanneBis")
+                    summary_parts = [offer.get("hauptberuf") or ""]
+                    if salary_from or salary_to:
+                        summary_parts.append(
+                            f"Jahresgehalt {salary_from or '?'} bis {salary_to or '?'} EUR"
+                        )
+                    if offer.get("homeofficemoeglich"):
+                        summary_parts.append("Homeoffice moeglich; Umfang unklar")
+                    description = " | ".join(part for part in summary_parts if part)
 
                     jobs.append({
                         "id": job_id,
-                        "title": offer.get("titel", "").strip(),
-                        "company": offer.get("arbeitgeber", "").strip(),
+                        "title": title.strip(),
+                        "company": company.strip(),
                         "location": job_location,
                         "url": url,
-                        "description": (offer.get("stellenbeschreibung") or "")[:500].strip(),
-                        "posted_date": offer.get("aktuelleVeroeffentlichungsdatum", ""),
+                        "description": description[:500],
+                        "posted_date": (
+                            offer.get("datumErsteVeroeffentlichung")
+                            or (offer.get("veroeffentlichungszeitraum") or {}).get("von")
+                            or offer.get("aktuelleVeroeffentlichungsdatum", "")
+                        ),
+                        "salary_min": salary_from,
+                        "salary_max": salary_to,
                         "source": self.SOURCE_NAME,
                         "matched_query": query,
                     })

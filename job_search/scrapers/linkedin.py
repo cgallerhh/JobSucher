@@ -1,8 +1,8 @@
-"""Token-free LinkedIn job search for known target companies.
+"""Token-free LinkedIn job search for the current target-company universe.
 
-LinkedIn is intentionally limited to Christian's known GKV insurers and IT
-service providers. The scraper uses LinkedIn's public guest job-search HTML and
-does not require paid third-party API credits.
+LinkedIn is intentionally limited to GKV insurers plus the companies from the
+current GKV/Healthcare/Public-Sector/Enterprise-Tech search profile. The scraper
+uses LinkedIn's public guest job-search HTML and needs no paid third-party API.
 """
 from __future__ import annotations
 
@@ -65,15 +65,31 @@ TARGET_ALIASES = {
     "R+V BKK": ["r v bkk", "ruv bkk"],
     "BKK Gildemeister Seidensticker": ["bkk gildemeister seidensticker"],
     "BKK Pfalz": ["bkk pfalz"],
-    "Arvato Systems": ["arvato systems"],
-    "BITMARCK": ["bitmarck"],
+    "DeepL": ["deepl"],
+    "SAP": ["sap"],
+    "ZOTZ|KLIMAS": ["zotz klimas", "zotzklimas"],
+    "FREENOW": ["free now", "freenow"],
+    "Genesys": ["genesys"],
+    "Veeam": ["veeam"],
+    "Salesforce": ["salesforce"],
+    "Thieme": ["thieme"],
+    "SoftwareOne": ["softwareone", "software one"],
+    "Amazon Web Services (AWS)": ["amazon web services", "aws"],
+    "Camunda": ["camunda"],
+    "Public Cloud Group": ["public cloud group"],
+    "AppZen": ["appzen"],
+    "Gartner": ["gartner"],
+    "SnapLogic": ["snaplogic"],
+    "BLP Digital": ["blp digital"],
+    "Ashby": ["ashby"],
+    "360Learning": ["360learning", "360 learning"],
+    "Conceptboard": ["conceptboard"],
     "ITSC GmbH": ["itsc"],
     "msg systems": ["msg systems", "msg"],
     "CGI": ["cgi"],
     "Dataport": ["dataport"],
     "Sopra Steria": ["sopra steria"],
     "Capgemini": ["capgemini"],
-    "Exxeta AG": ["exxeta"],
     "_fbeta GmbH": ["fbeta"],
     "GKV SC GmbH": ["gkv sc"],
     "opta data Gruppe": ["opta data", "optadata"],

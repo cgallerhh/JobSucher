@@ -1,38 +1,64 @@
 # Profil Christian Galler
 
-## Kurzprofil
-Senior Sales Manager mit über 30 Jahren Erfahrung im GKV-Markt.
-Spezialisierung: Public Sector IT, komplexe Ausschreibungs- und Vergabeverfahren (BID/Tender).
-Standort: Hamburg – Remote und Hybrid sind willkommen.
+## Positionierung
 
-## Kernkompetenzen
-- GKV-Markt (IKK, BKK, Ersatzkassen, DAK, TK; AOK ausgeschlossen)
-- Öffentliche Ausschreibungen: BID, Tender, BAFO – von Qualifikationsanalyse bis Preisverhandlung
-- Großdeals & Multi-Millionen-Verträge im B2B
-- Key Account Management & C-Level-Verhandlungen
-- IT-Transformation: Cloud, eHealth, Plattformlösungen
-- Stakeholder-Management (Fachbereich, IT, Vorstand)
-- Cross- & Upselling / Account Expansion
-- Bid-Strategie & Angebotssteuerung
-- Regulatorik: SGB V, B3S, KRITIS, NIS2, TI 2.0
-- BITMARCK / iskv_21c Umfeld
-- Cloud, RPA, GenAI / KI im Gesundheitswesen
+Seniorer Strategic-/Enterprise-Sales- und Account-Management-Profi mit mehr als
+30 Jahren GKV-/Payor-Erfahrung. Verbindet Markt- und Beschaffungslogik auf
+Kassenseite mit IT-Vertrieb, Ausschreibungen, C-Level-Dialog und der
+Orchestrierung von Produkt, Partnern und Delivery.
+
+Differenzierung: Christian kommt nicht aus der IT, die den GKV-Markt erst
+verstehen muss, sondern aus der GKV und kann IT, Vertrieb und reale
+Entscheidungslogiken auf Kassenseite zusammenfuehren.
+
+## Belastbare Leistungsbelege
+
+- 2025 bei adesso: 8,5 Mio. EUR Ziel, 11,5 Mio. EUR erreicht, 130 Prozent
+  Zielerreichung.
+- GKV-Grossausschreibung ueber rund 20 Mio. EUR auf fuenf Jahre gewonnen.
+- Verantwortung fuer 72 Accounts beziehungsweise breite IKK-/BKK-Abdeckung;
+  dies ist Marktbreite, kein behauptetes Eigentum an Kundenbeziehungen.
+- 15 Jahre unternehmerische Erfahrung mit Marktaufbau, Produkt-/Prozessdenken
+  und hoher Eigenverantwortung.
+- Erfahrung mit Cloud, Managed Services, Security/Compliance, digitalen
+  Plattformen sowie komplexen Buying Centern und Vergabeverfahren.
 
 ## Beruflicher Hintergrund
-- Seit 10/2024: Senior Account Manager bei adesso SE (GKV-Accounts, IT-Consulting)
-  → Zielerreichung 2025: 130 %
-  → Last Win: Digitale Kundenschnittstelle einer Groß-BKK, 20 Mio. € Auftragseingang
-- 07/2023–09/2024: Managing Consultant / Sales bei HBSN Consulting
-- 01/2008–06/2023: Gesellschafter-Geschäftsführer A7 Kooperative Marketingagentur GmbH
-  (15 Jahre, spezialisiert auf GKV, SaaS-Produkte, Cloud-Migration)
-- 07/2005–12/2007: Leiter Vertriebsunterstützung DAK-Gesundheit (26 Mitarbeitende)
-- Seit 1993: operatives GKV-Geschäft (Sozialversicherungsfachangestellter)
 
-## Zertifikate
-PRINCE2 Practitioner & Foundation, PSM I, ITIL Foundation, SAFe Foundation
+- 10/2024-06/2026: Senior Account Manager, adesso SE, GKV-Accounts und
+  IT-Consulting.
+- 07/2023-09/2024: Managing Consultant / Sales, HBSN Consulting.
+- 01/2008-06/2023: Gesellschafter-Geschaeftsfuehrer, A7 Kooperative
+  Marketingagentur GmbH.
+- 07/2005-12/2007: Leiter Vertriebsunterstuetzung, DAK-Gesundheit, 26
+  Mitarbeitende.
+- Seit 1993: operatives GKV-Geschaeft; Ausbildung zum
+  Sozialversicherungsfachangestellten.
 
-## Sprachen
-Deutsch (Muttersprache), Englisch (verhandlungssicher)
+## Transferwert ausserhalb des engen GKV-Markts
 
-## Gehaltsvorstellung
-Ab 90.000 € Jahresbrutto (Fixum) + variabler Anteil
+Christian kann komplexe regulierte Maerkte strukturieren, Entscheider- und
+Beschaffungslogiken verstehen, fachliche Bedarfe in belastbare Loesungs- und
+Account-Strategien uebersetzen und grosse Opportunities gemeinsam mit Produkt,
+Partnern und Delivery zum Abschluss fuehren. Er behauptet dabei kein fertiges
+Netzwerk in Banken, Privatversicherungen, DRV/DGUV, Behoerden oder
+Strafverfolgung.
+
+## Verfuegbarkeit und Narrativ
+
+Die Taetigkeit bei adesso endete am 30.06.2026. Christian ist seit 01.07.2026
+arbeitslos und kurzfristig verfuegbar. In Bewerbungen wird dies neutral als
+Verfuegbarkeitsvorteil formuliert: "Nach dem Ende meiner Taetigkeit bei adesso
+zum 30.06.2026 bin ich kurzfristig verfuegbar." Keine alte Freistellungsstory im
+Praesens und keine ALG-Details verwenden.
+
+## Rahmen
+
+- Standort Hamburg; Hamburg und rund 50 km Umkreis sind lokal passend.
+- Bundesweite Arbeitgeber sind bei echter Remote-Anstellung in Deutschland
+  passend.
+- Ziel: ca. 100.000 EUR Fixum plus Variable plus Dienstwagen/Car Allowance.
+- Untergrenze: 90.000 EUR Fixum nur bei ueberzeugendem Gesamtpaket, Mandat,
+  Entwicklung und Mobilitaet.
+- Deutsch Muttersprache, Englisch verhandlungssicher.
+- PRINCE2 Practitioner/Foundation, PSM I, ITIL Foundation, SAFe Foundation.

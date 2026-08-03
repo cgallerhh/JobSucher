@@ -15,7 +15,9 @@ HEADERS = {
     ),
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "de-DE,de;q=0.9,en;q=0.8",
-    "Accept-Encoding": "gzip, deflate, br",
+    # requests 2.31 decodes gzip/deflate without an optional Brotli package.
+    # Advertising br without that decoder produced binary-looking API bodies.
+    "Accept-Encoding": "gzip, deflate",
     "DNT": "1",
     "Connection": "keep-alive",
     "Upgrade-Insecure-Requests": "1",

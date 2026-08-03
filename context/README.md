@@ -1,20 +1,15 @@
-# Kontext-Ordner für die KI-Bewertung
+# Kontext fuer die KI-Bewertung
 
-Dateien in diesem Ordner werden beim täglichen Job-Search als Kontext
-an Claude übergeben, um Stellen intelligenter zu bewerten.
-
-## Dateien
+Alle Markdown-Dateien in diesem Ordner (ausser dieser README) werden beim
+taeglichen Lauf als Kontext an das konfigurierte OpenAI-Modell uebergeben.
 
 | Datei | Inhalt |
 |---|---|
-| `christian_profile.md` | Dein Profil & Kernkompetenzen (bereits befüllt) |
-| `job_criteria.md` | Deine konkreten Suchkriterien – **hier anpassen!** |
-| `target_companies.md` | Unternehmen die dich interessieren – **optional** |
-| `dealbreakers.md` | Absolutes No-Go – **optional** |
+| `christian_profile.md` | Positionierung, Leistungsbelege, Transferwert, Verfuegbarkeit und Verguetung |
+| `job_criteria.md` | Drei Suchspuren, Alternativrollen und harte Gates |
+| `target_companies.md` | aktuelle Prioritaeten, Acture-Status und Ausschlussregister |
 
-## So nutzt du dein Claude-Projekt
-
-1. Öffne dein Claude-Projekt mit den Stellensuche-PDFs
-2. Lass Claude die wichtigsten Erkenntnisse zusammenfassen
-3. Kopiere den Text in die jeweilige `.md`-Datei hier
-4. Committe die Änderungen → sofort beim nächsten Lauf aktiv
+Fachliche Quelle ist das LLM-Wiki `BEWERBUNGEN`, insbesondere das
+Masterdokument "Chancen, Rollen und Bewerbungsstrategien". Bei einer
+wesentlichen Profil- oder Statusaenderung muessen Konfiguration, Kontext und
+Tests gemeinsam aktualisiert werden.
