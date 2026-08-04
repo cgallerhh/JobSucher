@@ -1,10 +1,11 @@
 name: Daily Job Search
 
 on:
-  # Daily at 07:00 Europe/Berlin; daylight saving time is handled by GitHub.
+  # Daily at 07:07 Europe/Berlin; avoiding :00 reduces scheduler peak-load delays.
+  # Daylight saving time is handled by GitHub.
   # GitHub Actions schedule is not minute-exact and may start late.
   schedule:
-    - cron: '0 7 * * *'
+    - cron: '7 7 * * *'
       timezone: 'Europe/Berlin'
 
   # Manual trigger for testing - just click "Run workflow" in GitHub Actions
