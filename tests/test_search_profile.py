@@ -187,6 +187,22 @@ class CompanyAndLocationGateTests(unittest.TestCase):
 
 
 class SeenStateTests(unittest.TestCase):
+    def test_all_evaluated_jobs_are_marked_seen(self):
+        from job_search import main
+
+        seen = {"previous-id"}
+        main.mark_evaluated_jobs_seen(
+            seen,
+            [
+                {"id": "reported-id"},
+                {"id": "filtered-id"},
+                {"id": ""},
+                {},
+            ],
+        )
+
+        self.assertEqual(seen, {"previous-id", "reported-id", "filtered-id"})
+
     def test_legacy_state_is_re_evaluated_and_saved_with_profile_version(self):
         from job_search import main
 

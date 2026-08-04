@@ -85,6 +85,14 @@ def save_seen(seen: Set[str]) -> None:
     SEEN_FILE.write_text(json.dumps(state, indent=2) + "\n")
 
 
+def mark_evaluated_jobs_seen(seen: Set[str], jobs: List[dict]) -> None:
+    """Remember every job evaluated with the current search profile."""
+    for job in jobs:
+        job_id = job.get("id")
+        if job_id:
+            seen.add(job_id)
+
+
 def parse_posted_date(value: str):
     """Parse common job-board date formats; return None when a source omits dates."""
     value = (value or "").strip()
@@ -251,10 +259,9 @@ def main() -> None:
     diagnostics["final_relevant"] = len(relevant)
     logger.info("Relevant after AI scoring: %d", len(relevant))
 
-    # Mark only jobs that were actually shown as seen. Rejected jobs may become relevant
-    # later if the profile or scoring logic changes.
-    for job in relevant:
-        seen.add(job["id"])
+    # Remember every job evaluated in this run, including rejected jobs. A future
+    # profile-version change deliberately clears this state for one re-evaluation.
+    mark_evaluated_jobs_seen(seen, new_jobs)
     save_seen(seen)
 
     # Send email, including a null-report when nothing relevant was found
