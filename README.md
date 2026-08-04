@@ -1,9 +1,20 @@
 # Job Search Automation
 
-Täglich um 9:00 Uhr (Wochentage) durchsucht dieser Bot automatisch
+Täglich um 9:00 Uhr durchsucht dieser Bot automatisch
 **Arbeitsagentur**, **Indeed**, **StepStone**, **LinkedIn** sowie direkte
-GKV- und IT-Dienstleister-Karriereseiten nach passenden Stellen für
+Karriereseiten priorisierter Zielunternehmen nach passenden Stellen für
 **Christian Galler** und liefert eine sortierte E-Mail-Übersicht.
+
+Das Suchprofil entspricht dem Bewerbungs-Master vom 03.08.2026 und arbeitet mit
+drei Spuren:
+
+1. GKV, Krankenkassen, Sozialversicherung und Payor/Payer
+2. Healthcare, Health IT, Digital Health und Public Sector
+3. senioriger Enterprise-Tech-Transfer in Cloud, Managed Services,
+   Security/Compliance, Data/AI, Plattformen und SaaS
+
+Berücksichtigt werden Hamburg/Umkreis und echte Remote-Rollen in Deutschland.
+Geschlossene Firmen sowie bereits beworbene Arbeitgeber werden hart gesperrt.
 
 ---
 
@@ -35,7 +46,7 @@ Klicke auf **Run workflow** für einen ersten Testlauf.
 
 ## Zeitplan
 
-Der Cron läuft auf `0 7 * * 1-5` (UTC):
+Der Cron läuft auf `0 7 * * *` (UTC):
 
 | Jahreszeit | UTC | Deutsche Zeit |
 |---|---|---|
@@ -51,11 +62,17 @@ den Cron auf `0 8 * * 1-5` ändern (dann ist es im Sommer 10:00 Uhr).
 
 Alle Suchparameter befinden sich in `job_search/config.py`:
 
-- **`SEARCH_QUERIES`** – Suchbegriffe für die Jobbörsen
+- **`EXTERNAL_QUERIES`** – Suchbegriffe für die drei Suchspuren
+- **`APPLIED_COMPANIES`** – bereits beworbene Firmen, die nicht erneut erscheinen
+- **`EXCLUDED_COMPANIES`** – verbindliches Firmen-Ausschlussregister
 - **`POSITIVE_KEYWORDS`** – Schlüsselwörter die die Relevanz erhöhen (+ Punkte)
 - **`NEGATIVE_KEYWORDS`** – Schlüsselwörter die ausschließen (− Punkte)
 - **`MIN_SCORE`** – Mindestscore für die E-Mail (Standard: 25)
 - **`PROFILE["location"]`** – Suchort (Standard: Hamburg)
+
+`PROFILE_VERSION` versioniert den Deduplication-State. Bei einer inhaltlichen
+Profiländerung werden aktuelle Stellen einmal neu bewertet, ohne die Historie
+manuell löschen zu müssen.
 
 ---
 
@@ -89,10 +106,12 @@ python -m job_search.main
 │       ├── arbeitsagentur.py          ← Bundesagentur-für-Arbeit-API
 │       ├── gkv_careers.py             ← 31 GKV-Karriereseiten
 │       ├── indeed.py                  ← Indeed RSS
-│       ├── it_dienstleister.py        ← GKV-/Public-IT-Dienstleister
+│       ├── it_dienstleister.py        ← direkte Seiten der Zielunternehmen
 │       ├── stepstone.py               ← StepStone HTML-Scraping
 │       └── linkedin.py                ← LinkedIn Guest HTML, Zielunternehmen only
 ├── data/seen_jobs.json                ← Deduplication-State (auto-gepflegt)
+├── context/                           ← Profil, Kriterien, Firmenstatus für KI-Scoring
+├── tests/                             ← Tests der Such- und Ausschlusslogik
 ├── requirements.txt
 └── .env.example
 ```

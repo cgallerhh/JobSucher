@@ -21,6 +21,8 @@ from typing import Dict, List, Optional, Tuple
 
 import requests
 
+from .config import APPLIED_COMPANIES, EXCLUDED_COMPANIES, PROFILE
+
 logger = logging.getLogger(__name__)
 
 CONTEXT_DIR = Path("context")
@@ -60,29 +62,46 @@ def _load_context() -> str:
 
 
 def _system_prompt(context: str) -> str:
-    return f"""Du bist ein spezialisierter Karriere-Assistent für einen Senior Sales Manager \
-im GKV- und Public-Sector-IT-Markt. Bewerte Stellenanzeigen ausführlich und präzise.
+    excluded = ", ".join(EXCLUDED_COMPANIES)
+    applied = ", ".join(APPLIED_COMPANIES)
+    return f"""Du bist ein spezialisierter Karriere-Assistent fuer Christian Galler. \
+Bewerte Stellenanzeigen streng gegen sein aktuelles Master-Suchprofil vom 03.08.2026.
 
 {context}
 
 ---
 
 BEWERTUNGSSCHEMA (score 0-100):
-- 80-100: Perfekter Match: Sales/Account-Rolle + GKV oder Public Sector IT + Senior-Level
-- 70-79:  Gut: klarer Match, aber mit kleinem Prüfpunkt
-- 60-69:  Nicht für die Mail geeignet: verwandtes Umfeld, aber kein klarer Match
-- 40-59:  Teilweise: IT-Consulting oder Gesundheitswesen ohne direkten GKV-Vertriebsfokus
-- 25-39:  Grenzwertig: entfernt relevant, koennte trotzdem einen Blick wert sein
-- 0-24:   Nicht relevant: falsche Branche, falsches Level oder kein Vertriebsbezug
+- 85-100: A-Fit: seniorige Markt-/Kundenverantwortung und sehr starke Spur-1- oder Spur-2-Passung
+- 80-84:  Klar bewerben: belastbare Passung, hoechstens ein frueh zu klaerendes Gate
+- 70-79:  Qualifizieren: fachlich plausibel, aber Gehalt, Arbeitsmodell, Mandat oder Transfer offen
+- 60-69:  Nicht mailen: interessante Naehe, aber zu wenig Hebel oder zu grosses Transferrisiko
+- 0-59:   Nicht relevant, falsche Senioritaet, falscher Standort oder strukturell unpassend
 
-ERLAUBTE MATCH-TYPEN:
-1. GKV/Krankenkassenbezug + Account-/Sales-/Business-Development-Rolle
-2. Krankenkasse direkt + CDO/Leitung/Digital-/IT-/Strategie-/Vergabe-Rolle
-3. IT-Dienstleister + Public-Sector-IT oder Health-IT Bezug
-4. Public-Sector-Sales/BD-Rolle mit klarem IT-Kontext, z.B. Cloud, KRITIS, NIS2,
-   KI/AI/GenAI, Cybersecurity, Plattformen, IT-Systeme oder digitale Infrastruktur
+ERLAUBTE SUCHSPUREN:
+1. GKV/PAYOR: Strategic/Senior/Key Account, Enterprise AE, Senior Sales oder Business
+   Development mit GKV-, Krankenkassen-, Sozialversicherungs-, Payer- oder Vergabebezug.
+2. HEALTHCARE/PUBLIC: senioriger Vertrieb, Partnerschaften oder Marktaufbau fuer Healthcare,
+   Health IT, Digital Health, Public Healthcare oder Public-Sector-Technologie.
+3. ENTERPRISE-TECH-TRANSFER: nur seniorige Enterprise-/Named-/Strategic-Account-Rollen fuer
+   Cloud, Managed Services, Security/Compliance, Data/AI, Plattformen oder Enterprise SaaS.
+4. ALTERNATIVROLLE: Market Access, Payer Partnerships oder Vertragsmanagement/-verhandlung
+   mit echtem Krankenkassen-/Kostentraegerhebel sowie strategische interne GKV-Leitungsrolle.
 
-FESTE AUSSCHLUESSE (score immer 0): Ausland, adesso SE, HBSN Consulting, Init AG, AOK-Verbund
+VERBINDLICHE GATES:
+- Standort Hamburg/Umkreis oder echte bundesweite Remote-Anstellung in Deutschland.
+- Zielpaket ca. {PROFILE['salary_target']:,} EUR Fixum plus Variable plus Dienstwagen/Car
+  Allowance; Untergrenze {PROFILE['salary_min']:,} EUR Fixum nur bei starkem Gesamtpaket.
+- Unbekanntes Gehalt als fruehen Pruefpunkt nennen, nicht frei schaetzen.
+- Keine Junior-, operative Service-, reine Delivery-/Consultant- oder generische niedrig
+  seniorige BDM-Rolle.
+- Rollen mit zwingendem fertigem Netzwerk ausserhalb GKV (z. B. Banken, DRV/DGUV,
+  Strafverfolgung) deutlich abwerten; Transferfaehigkeit allein nicht als Netzwerk ausgeben.
+- Drei feste Buerotage ausserhalb Hamburg oder ein unklarer Deutschland-Arbeitsort sind ein
+  Stop-/Pruefpunkt.
+
+FESTE FIRMENAUSSCHLUESSE (score immer 0): {excluded}
+BEREITS BEWORBEN (nicht erneut melden, score 0): {applied}
 
 ---
 

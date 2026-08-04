@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 SOURCE_COLORS = {
     "Arbeitsagentur":   "#005b99",
     "GKV Karriere":     "#0f766e",
-    "IT Dienstleister": "#7c3aed",
+    "Zielunternehmen":  "#7c3aed",
     "LinkedIn":         "#0077b5",
     "Indeed":           "#2557a7",
     "StepStone":        "#e8620b",
@@ -237,7 +237,7 @@ def build_html(jobs: List[Dict], name: str) -> str:
     <!-- Footer -->
     <p style="text-align:center;margin-top:20px;font-size:11px;color:#9ca3af;">
       Job-Search-Bot &middot; Quellen: Arbeitsagentur &middot; LinkedIn &middot; Indeed &middot; StepStone &middot; GKV-Karriereseiten<br>
-      <a href="https://github.com/cgallerhh/Jobsucher/actions"
+      <a href="https://github.com/cgallerhh/JobSucher/actions"
          style="color:#93c5fd;text-decoration:none;">Workflow-Status</a>
     </p>
 
@@ -289,8 +289,9 @@ def build_empty_html(name: str, diagnostics: Dict | None = None) -> str:
       <p style="margin:0 0 12px;font-size:15px;color:#111827;">Hi {first_name},</p>
       <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.6;">
         der tägliche GitHub-Lauf war erfolgreich. Ich zeige dir weiterhin nur Rollen,
-        die sowohl zur Senior-Sales-/Strategie-Ebene als auch zur GKV-, Public-Sector-
-        oder Healthcare-IT-Domäne passen.
+        die das aktuelle Masterprofil erfüllen: GKV/Payor, Healthcare/Public Sector
+        oder senioriger Enterprise-Tech-Transfer. Hamburg/Umkreis, echte
+        Deutschland-Remote-Optionen und die Firmenausschlüsse wurden berücksichtigt.
       </p>
       <div style="margin-top:18px;border-top:1px solid #e5e7eb;padding-top:16px;">
         <table style="width:100%;border-collapse:collapse;font-size:13px;">
@@ -332,7 +333,7 @@ def build_empty_html(name: str, diagnostics: Dict | None = None) -> str:
 
     <p style="text-align:center;margin-top:20px;font-size:11px;color:#9ca3af;">
       Job-Search-Bot &middot; tägliche Nullmeldung aktiviert<br>
-      <a href="https://github.com/cgallerhh/Jobsucher/actions"
+      <a href="https://github.com/cgallerhh/JobSucher/actions"
          style="color:#93c5fd;text-decoration:none;">Workflow-Status</a>
     </p>
   </div>

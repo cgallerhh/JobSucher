@@ -1,294 +1,331 @@
+"""Verbindliches Suchprofil fuer Christian Gallers Bewerbungspipeline.
+
+Quelle: LLM-Wiki/BEWERBUNGEN, Masterdokument
+"Chancen, Rollen und Bewerbungsstrategien", Stand 03.08.2026.
 """
-Job search configuration – Christian Galler
-Senior Sales Manager | GKV & Public Sector IT | Hamburg
-"""
+
+PROFILE_VERSION = "2026-08-03-master-v1"
 
 PROFILE = {
     "name": "Christian Galler",
     "email": "christian.galler@gmail.com",
+    "headline": "Strategic Enterprise Sales | GKV, Healthcare, Public Sector",
     "location": "Hamburg",
     "radius_km": 50,
     "remote_ok": True,
+    "salary_target": 100000,
     "salary_min": 90000,
+    "availability": "kurzfristig verfuegbar",
 }
 
-# Locations to search – first entry = local, "Deutschland" = nationwide/remote
+# Die drei Suchspuren muessen gemeinsam abgedeckt werden. Spur 3 ist bewusst
+# eine Transferstrecke und verlangt im Filter einen klaren Enterprise-/Senior-
+# Titel sowie Cloud-, Security-, Data-/AI-, Plattform- oder SaaS-Kontext.
+SEARCH_TRACKS = {
+    "gkv_payor": "GKV, Krankenkassen, Sozialversicherung, Payer/Payor, Vergabe",
+    "health_public": "Healthcare, Health IT, Digital Health, Public Healthcare, Public Sector",
+    "enterprise_tech": "Enterprise Tech Sales: Cloud, Managed Services, Security, Data/AI, Plattformen, SaaS",
+}
+
+# Lokal plus bundesweit fuer echte Remote-Rollen. Der Standortfilter verhindert,
+# dass ein blosses Suchergebnis aus Berlin/Muenchen ohne Remote-Modell durchkommt.
 SEARCH_LOCATIONS = ["Hamburg", "Deutschland"]
 
-# Queries for external job boards (Arbeitsagentur, LinkedIn)
-# → suche nach Sales-/BD-Rollen bei IT-Unternehmen im GKV-Umfeld
+# Praezise Suchanfragen fuer Arbeitsagentur, Indeed, StepStone und LinkedIn.
 EXTERNAL_QUERIES = [
-    "Senior Account Manager GKV",
-    "Sales Manager Gesundheitswesen IT",
-    "Key Account Manager Public Sector IT",
-    "Business Development Manager Healthcare IT",
-    "Account Executive eHealth",
-    "Senior Sales Manager Krankenkasse",
-    "Account Manager IT Consulting Gesundheit",
-    "Client Partner Public Sector IT",
-    "Partner Manager Healthcare IT",
-    "Alliance Manager eHealth",
-    "Sales Director Public Sector",
-    "Commercial Lead Healthcare IT",
-    "Go-to-Market Public Sector",
-    "Strategic Account Manager Sozialversicherung",
+    # Spur 1: GKV / Sozialversicherung / Payor
+    "Strategic Account Manager GKV",
+    "Senior Account Manager Krankenkassen",
+    "Key Account Manager Krankenkassen Vergabe",
+    "Enterprise Account Executive Sozialversicherung",
+    "Business Development Manager Healthcare Payer",
+    # Spur 2: Healthcare / Public Sector
+    "Senior Account Executive Healthcare",
+    "Enterprise Account Executive Public Sector",
+    "Senior Sales Manager Health IT",
+    "Business Development Manager Digital Health",
+    "Client Partner Healthcare",
+    "Partner Manager Healthcare",
+    # Spur 3: gehaltsstarker Enterprise-Tech-Transfer
+    "Enterprise Account Executive Cloud Germany",
+    "Enterprise Account Executive Data AI Germany",
+    "Senior Account Executive Cybersecurity Germany",
+    "Strategic Account Manager Managed Services",
+    "Named Account Executive Insurance Germany",
+    "Enterprise Account Executive SaaS Germany",
+    # Bewusste Alternativrollen im Payor-/Vertragsumfeld
+    "Market Access Manager Krankenkassen",
+    "Vertragsmanager Krankenkassen Gesundheitswesen",
 ]
 
-# Queries for GKV career pages (GKV Karriere scraper)
-# → suche nach internen Führungsrollen direkt bei Krankenkassen
-# Wird als Titelfilter verwendet (Job erscheint nur wenn mind. ein Begriff im Titel steckt)
-GKV_QUERIES = [
-    "Leiter",
-    "Head of",
-    "Manager",
-    "Director",
-    "CDO",
-    "Chief",
-    "Digitalisierung",
-    "eHealth",
-    "IT",
-    "Strategie",
-    "Vertrieb",
-    "Einkauf",
-    "Vergabe",
-    "Innovation",
-]
-
-# Backwards-compat alias used by existing imports
-SEARCH_QUERIES = EXTERNAL_QUERIES
-
-# Queries für IT-Dienstleister-Karriereseiten (Titelfilter, kürzere Begriffe)
-# → breiter als EXTERNAL_QUERIES, da Stellentitel bei Dienstleistern selten "GKV" enthalten
-IT_DIENSTLEISTER_QUERIES = [
-    "Account Manager",
-    "Sales Manager",
-    "Key Account",
-    "Business Development",
+# Die BA-v6-Suche behandelt lange Phrasen deutlich strenger als die anderen
+# Jobboersen. Dort wird deshalb ueber Senior-/Zieltitel breit eingesammelt und
+# erst anschliessend mit demselben harten Masterprofil gefiltert.
+BA_QUERIES = [
+    "Strategic Account Manager",
+    "Senior Account Manager",
+    "Key Account Manager",
+    "Senior Sales Manager",
+    "Enterprise Account Executive",
+    "Senior Account Executive",
+    "Named Account Executive",
+    "Business Development Manager",
     "Client Partner",
     "Partner Manager",
-    "Alliance Manager",
-    "Sales Director",
-    "Commercial Lead",
-    "Go-to-Market",
-    "Strategic Account",
-    "Vertrieb",
-    "Manager",
-    "Director",
-    "Head of",
-    "Consulting",
-    "Consultant",
-    "Healthcare",
-    "Gesundheit",
-    "eHealth",
-    "GKV",
-    "Public Sector",
+    "Market Access Manager",
+    "Vertragsmanager Gesundheitswesen",
 ]
 
-# Keywords that BOOST relevance score (keyword → points)
+# Strategische interne Rollen bei Krankenkassen bleiben eine schmale
+# Alternativspur. Operative Kassenrollen werden im Relevanz-Gate ausgeschlossen.
+GKV_QUERIES = [
+    "Leiter Digitalisierung",
+    "Leiter IT-Strategie",
+    "Leiter Unternehmensentwicklung",
+    "Leiter Vergabemanagement",
+    "Head of Digital",
+    "Head of IT Strategy",
+    "Head of Procurement",
+    "Chief Digital Officer",
+    "Partner Manager",
+    "Vertragsmanager",
+]
+
+# Titelfilter fuer die direkt beobachteten Zielunternehmen.
+DIRECT_COMPANY_QUERIES = [
+    "Strategic Account Manager",
+    "Senior Account Manager",
+    "Key Account Manager",
+    "Senior Sales Manager",
+    "Sales Director",
+    "Senior Account Executive",
+    "Enterprise Account Executive",
+    "Named Account Executive",
+    "Business Development Manager",
+    "Client Partner",
+    "Partner Manager",
+    "Commercial Lead",
+    "Go-to-Market",
+    "Market Access",
+    "Vertragsmanager",
+    "Vertragsverhandler",
+]
+
+# Rueckwaertskompatible Aliase fuer bestehende Imports.
+SEARCH_QUERIES = EXTERNAL_QUERIES
+IT_DIENSTLEISTER_QUERIES = DIRECT_COMPANY_QUERIES
+
+# Diese Firmen erhalten im Scoring einen kleinen Prioritaetsbonus. Der fachliche
+# und regionale Fit bleibt trotzdem zwingend.
+PRIORITY_COMPANIES = [
+    "DeepL",
+    "SAP",
+    "ZOTZ|KLIMAS",
+    "FREENOW",
+    "Genesys",
+    "Veeam",
+    "Salesforce",
+    "Thieme",
+    "SoftwareOne",
+    "Amazon Web Services",
+    "Camunda",
+    "Public Cloud Group",
+    "AppZen",
+    "Gartner",
+    "SnapLogic",
+]
+
+# Bereits beworben: nicht erneut als neue Chance melden.
+APPLIED_COMPANIES = ["Acture"]
+
+# Verbindliches Ausschlussregister aus dem Master und Target-Companies.
+# Der Abgleich erfolgt ausschliesslich gegen das Arbeitgeberfeld, damit z. B.
+# eine Referenz auf BITMARCK im Text einer ansonsten passenden Stelle erlaubt ist.
+EXCLUDED_COMPANIES = [
+    "adesso",
+    "HBSN Consulting",
+    "INIT",
+    "Exxeta",
+    "HMM",
+    "HMM Deutschland",
+    "hcVISION",
+    "puntus",
+    "BITMARCK",
+    "Arvato Systems",
+    "d.velop",
+    "FERCHAU",
+    "Faktor D",
+    "x-tention",
+    "IQVIA",
+    "DAVASO",
+    "COMLINE",
+    "act digital",
+    "Cloudflight",
+    "KWSoft",
+    "NICE",
+    "Cognigy",
+    "smart2success",
+    "aquinet",
+    "IPSWAYS",
+    "GKV Informatik",
+    "Convista",
+    "AGORUM",
+    "AOK",
+]
+
+# Diese Firmen sind nur dann ausgeschlossen, wenn die konkrete Rolle die
+# dokumentierte Kompetenzluecke explizit verlangt.
+CONDITIONAL_COMPANY_EXCLUSIONS = {
+    "atacama": ["oscare"],
+}
+
+# Keywords, die den deterministischen Score erhoehen.
 POSITIVE_KEYWORDS = {
-    # Core domain – highest weight
+    # Spur 1: GKV / Payor / Sozialversicherung
     "GKV": 20,
     "gesetzliche Krankenversicherung": 20,
     "Krankenkasse": 18,
     "Krankenkassen": 18,
-    "BKK": 15,
-    "IKK": 15,
-    "DAK": 15,
-    "TK ": 10,
-    "Public Sector": 15,
-    "öffentlicher Sektor": 15,
-    "Behörden": 10,
-    "ÖGD": 12,
-    # Sales roles
-    "Account Manager": 15,
-    "Sales Manager": 15,
-    "Sales Director": 15,
-    "Key Account": 15,
-    "Business Development": 12,
-    "Client Partner": 12,
-    "Partner Manager": 10,
-    "Alliance Manager": 10,
-    "Commercial Lead": 10,
-    "Go-to-Market": 10,
-    "Vertrieb": 10,
-    "Neukundengewinnung": 10,
-    "Großkunden": 10,
-    "Enterprise Sales": 12,
-    # IT & Health IT
-    "eHealth": 15,
-    "Gesundheitswesen": 12,
-    "Healthcare IT": 15,
+    "Sozialversicherung": 18,
+    "Payer": 14,
+    "Payor": 14,
+    "Kostenträger": 14,
+    "BKK": 14,
+    "IKK": 14,
+    "SGB V": 14,
+    "BITMARCK": 10,
+    "iskv": 10,
+    # Spur 2: Healthcare / Public Sector
+    "Healthcare": 14,
+    "Gesundheitswesen": 14,
     "Health IT": 15,
-    "IT-Consulting": 12,
-    "IT Consulting": 12,
-    "Digitalisierung": 8,
+    "Healthcare IT": 15,
     "Digital Health": 14,
-    # Tender / Bid
+    "eHealth": 14,
+    "Public Healthcare": 16,
+    "Public Sector": 16,
+    "öffentlicher Sektor": 16,
+    "Government": 10,
+    "regulierte Branchen": 10,
+    "regulated industries": 10,
+    # Zielrollen / Senioritaet
+    "Strategic Account Manager": 18,
+    "Senior Account Manager": 18,
+    "Key Account Manager": 16,
+    "Senior Sales Manager": 18,
+    "Sales Director": 16,
+    "Enterprise Account Executive": 20,
+    "Senior Account Executive": 18,
+    "Named Account Executive": 18,
+    "Business Development Manager": 14,
+    "Client Partner": 15,
+    "Partner Manager": 12,
+    "Commercial Lead": 12,
+    "Go-to-Market": 10,
+    "Enterprise Sales": 14,
+    "Großkunden": 10,
+    "Neukundengewinnung": 8,
+    # Alternativrollen mit Markt-/Vertragshebel
+    "Market Access": 15,
+    "Payer Partnerships": 15,
+    "Strategic Partnerships": 12,
+    "Vertragsmanager": 14,
+    "Vertragsverhandler": 14,
+    "Vertragsreferent": 12,
+    # Strategische interne GKV-Alternativen
+    "Leiter Digitalisierung": 22,
+    "Leiter IT-Strategie": 22,
+    "Leiter Unternehmensentwicklung": 20,
+    "Leiter Vergabemanagement": 20,
+    "Head of Digital": 20,
+    "Head of IT Strategy": 20,
+    "Head of Procurement": 20,
+    "Chief Digital Officer": 22,
+    # Ausschreibung / Large Deal / Buying Center
     "Ausschreibung": 15,
-    "Vergabe": 12,
-    "BID ": 10,
-    "Tender": 10,
-    "BAFO": 15,
+    "Vergabe": 14,
+    "Tender": 12,
+    "BAFO": 14,
     "Vergabeverfahren": 14,
-    # Regulatory
-    "KRITIS": 12,
-    "NIS2": 12,
-    "SGB V": 15,
-    "TI 2.0": 12,
-    "Telematikinfrastruktur": 12,
-    # Technology
-    "Cloud": 8,
-    "Cybersecurity": 10,
+    "C-Level": 10,
+    "Buying Committee": 8,
+    "Large Deal": 10,
+    # Spur 3: Enterprise Tech
+    "Enterprise": 10,
+    "Cloud": 10,
+    "Managed Services": 12,
+    "Cybersecurity": 12,
     "Security": 8,
-    "KI": 8,
-    "AI": 8,
+    "Compliance": 10,
+    "KRITIS": 12,
+    "NIS2": 10,
+    "Data & AI": 12,
+    "Data and AI": 12,
     "Künstliche Intelligenz": 10,
-    "Systeme": 5,
-    "IT-Systeme": 8,
-    "BITMARCK": 15,
-    "iskv": 12,
-    "RPA": 8,
-    "GenAI": 8,
-    # Seniority / level
-    "Senior": 8,
-    "Lead ": 6,
-    "Principal": 6,
-    "Director": 5,
-    "Head of": 5,
-    # Location
+    "GenAI": 10,
+    "SaaS": 10,
+    "Plattform": 8,
+    "Platform": 8,
+    "Software": 6,
+    # Arbeitsmodell
     "Hamburg": 5,
     "Remote": 5,
-    "Hybrid": 5,
     "Homeoffice": 5,
-    # GKV internal leadership roles – Digitalisierung & Transformation
-    "Chief Digital Officer": 22,
-    "CDO": 15,
-    "Leiter Digital": 22,        # covers Leiter Digitalisierung, Leiter Digitale *
-    "Bereichsleiter Digital": 22,
-    "Head of Digital": 22,
-    "Leiter E-Health": 22,
-    "Leiter eHealth": 22,
-    "Leiter Unternehmensentwicklung": 20,
-    "Leiter Innovation": 20,     # covers Leiter Innovation + Leiter Innovationsmanagement
-    "Head of Customer Experience": 20,
-    # GKV internal leadership roles – IT-Strategie & IT-Steuerung
-    "Leiter IT-Strategie": 22,
-    "Head of IT Strategy": 22,
-    "Leiter IT-Steuerung": 22,
-    "Head of IT Governance": 22,
-    "IT-Portfolio": 18,
-    "IT Portfolio": 18,
-    "IT-Programmleiter": 20,
-    "Demand Management IT": 18,
-    "Head of Cloud Transformation": 20,
-    "Leiter Anwendungsstrategie": 20,
-    "Leiter Plattformstrategie": 20,
-    # GKV internal leadership roles – Einkauf, Vergabe & Sourcing
-    "Leiter Einkauf": 20,        # covers Leiter Einkauf IT + Leiter Strategischer Einkauf
-    "Head of Procurement": 20,
-    "Vergabemanagement": 18,
-    "Tender Manager": 18,
-    "Sourcing Manager": 18,
-    "Vendor Manager": 18,
-    "Dienstleistersteuerung": 18,
-    "Leiter Partnermanagement": 18,
-    # GKV internal leadership roles – Vertrieb & Markt
-    "Leiter Vertrieb": 20,
-    "Leiter Kundenmanagement": 20,
-    "Leiter Firmenkunden": 20,
-    "Leiter Bestandskunden": 18,
-    "Leiter Partnervertrieb": 20,
-    # GKV internal leadership roles – Produkt & Versorgung
-    "Leiter Digitale Produkte": 22,
-    "Head of Digital Products": 22,
-    "Leiter App": 18,
-    "Omnichannel": 15,
-    "Leiter Versorgungsprogramme": 20,
-    "Leiter Versorgungslösungen": 20,
-    "eHealth-Produkte": 18,
-    # GKV internal leadership roles – Vorstand & Stabsfunktionen
-    "Leiter Strategie": 20,
-    "Leiter Vorstandsstab": 20,
-    "Chief of Staff": 18,
-    "Referent Vorstand": 18,
-    # Known companies in the ecosystem
-    "CGI": 8,
-    "IBM": 6,
-    "Sopra Steria": 8,
-    "Capgemini": 8,
-    "msg": 8,
-    "Exxeta": 8,
-    "Deloitte": 6,
-    "PwC": 6,
-    "KPMG": 6,
-    "Accenture": 6,
-    "T-Systems": 8,
-    "Atruvia": 8,
+    "Home Office": 5,
+    "Hybrid": 3,
+    # Aktuell priorisierte Arbeitgeber
+    "DeepL": 8,
+    "SAP": 8,
+    "ZOTZ": 8,
+    "FREENOW": 8,
+    "Genesys": 8,
+    "Veeam": 8,
+    "Salesforce": 8,
+    "Thieme": 8,
+    "SoftwareOne": 6,
+    "Camunda": 6,
+    "Public Cloud Group": 6,
+    "AppZen": 5,
 }
 
-# Keywords that REDUCE score (keyword → negative points)
+# Rollen- und Branchenmerkmale, die den Score reduzieren. Firmenausschluesse
+# stehen bewusst separat und werden als hartes Gate behandelt.
 NEGATIVE_KEYWORDS = {
-    "adesso": -100,
-    "adesso SE": -100,
-    "AOK": -100,
-    "AOK-Verbund": -100,
-    "INIT AG": -100,    # ehemaliger Arbeitgeber (Übernahmepartner HBSN GmbH)
-    "Zeitarbeit": -30,
-    "Zeitarbeitnehmer": -30,
-    "Leiharbeit": -30,
+    "Zeitarbeit": -40,
+    "Leiharbeit": -40,
+    "Arbeitnehmerüberlassung": -40,
     "Sachbearbeiter": -100,
     "Sachbearbeitung": -100,
     "Kundenberater": -80,
     "Kundenservice": -80,
     "Sozialversicherungsfachangestell": -100,
-    "Leistungssachbearbeiter": -100,
-    "Werkstudent": -40,
-    "Praktikum": -40,
-    "Praktikant": -40,
-    "Trainee": -20,
-    "Junior": -25,
-    "Berufseinsteiger": -30,
-    "Quereinsteiger": -20,
-    "Minijob": -40,
-    "450 ": -30,
-    "Pflegefachkraft": -40,
-    "Pflegekraft": -40,
-    "Pflegehelfer": -40,
-    "Arzt": -40,
-    "Ärztin": -40,
-    "Medizin": -20,
-    "Krankenpflege": -40,
-    "Physiotherap": -40,
-    "Zahnarzt": -40,
-    "Produktion": -30,
-    "Lager ": -30,
-    "Logistik": -20,
+    "Werkstudent": -100,
+    "Praktikum": -100,
+    "Praktikant": -100,
+    "Trainee": -100,
+    "Junior": -100,
+    "Berufseinsteiger": -100,
+    "Quereinsteiger": -40,
+    "Minijob": -100,
+    "Pflegefachkraft": -100,
+    "Pflegekraft": -100,
+    "Arzt": -80,
+    "Ärztin": -80,
+    "Krankenpflege": -100,
+    "Physiotherap": -100,
+    "Produktion": -60,
+    "Lager ": -60,
+    "Logistik": -40,
     "Automotive": -100,
     "Automobil": -100,
     "Autohaus": -100,
-    "Fahrzeug": -80,
-    "Flottenmanagement": -80,
-    "Fleet Management": -80,
-    "Fahrer": -35,
-    "LKW": -35,
-    "Monteur": -35,
-    "Hausmeister": -40,
-    "Reinigung": -40,
-    "Buchhaltung": -20,
-    "Steuerberater": -30,
-    "INIT AG": -100,    # ehemaliger Arbeitgeber (Übernahmepartner HBSN GmbH)
-
+    "Fahrer": -80,
+    "Monteur": -80,
+    "Hausmeister": -100,
+    "Reinigung": -100,
 }
 
-# Minimum score to include in the daily email
 MIN_SCORE = 25
-
-# Final email threshold after AI scoring / strict matching.
 MIN_EMAIL_SCORE = 70
-
-# Max jobs fetched per query per source (avoid hammering)
 MAX_JOBS_PER_QUERY = 25
-
-# Only show jobs with a parseable posting date no older than this.
-# Sources without a posting date are kept and judged by the relevance filters.
 MAX_JOB_AGE_DAYS = 14
