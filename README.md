@@ -1,6 +1,6 @@
 # Job Search Automation
 
-Täglich um 9:00 Uhr durchsucht dieser Bot automatisch
+Täglich um 7:00 Uhr deutscher Ortszeit durchsucht dieser Bot automatisch
 **Arbeitsagentur**, **Indeed**, **StepStone**, **LinkedIn** sowie direkte
 Karriereseiten priorisierter Zielunternehmen nach passenden Stellen für
 **Christian Galler** und liefert eine sortierte E-Mail-Übersicht.
@@ -46,15 +46,16 @@ Klicke auf **Run workflow** für einen ersten Testlauf.
 
 ## Zeitplan
 
-Der Cron läuft auf `0 7 * * *` (UTC):
+Der Cron läuft täglich auf `0 7 * * *` mit der IANA-Zeitzone
+`Europe/Berlin`:
 
-| Jahreszeit | UTC | Deutsche Zeit |
+| Jahreszeit | Entsprechende UTC-Zeit | Deutsche Zeit |
 |---|---|---|
-| Sommer (CEST, UTC+2) | 07:00 | **09:00** |
-| Winter (CET, UTC+1) | 07:00 | 08:00 |
+| Sommer (CEST, UTC+2) | 05:00 | **07:00** |
+| Winter (CET, UTC+1) | 06:00 | **07:00** |
 
-Für exakt 9:00 Uhr im Winter: In `.github/workflows/job-search.yml`
-den Cron auf `0 8 * * 1-5` ändern (dann ist es im Sommer 10:00 Uhr).
+GitHub berücksichtigt die Umstellung zwischen Sommer- und Winterzeit
+automatisch. Geplante Läufe können systembedingt einige Minuten später starten.
 
 ---
 
