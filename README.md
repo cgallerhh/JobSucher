@@ -74,6 +74,10 @@ Alle Suchparameter befinden sich in `job_search/config.py`:
 Profiländerung werden aktuelle Stellen einmal neu bewertet, ohne die Historie
 manuell löschen zu müssen.
 
+Alle mit der aktuellen Profilversion geprüften Stellen werden im Seen-State
+gespeichert, auch wenn sie durch ein Gate oder den Score aussortiert wurden.
+Dadurch werden unveränderte Treffer nicht an jedem Folgetag erneut bewertet.
+
 ---
 
 ## Lokaler Testlauf
