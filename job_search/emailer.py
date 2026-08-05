@@ -21,20 +21,23 @@ SOURCE_COLORS = {
 }
 
 
-def _score_meta(score: int):
+def _score_meta(score: int, manual_review: bool = False):
+    if manual_review:
+        return "Manuell", "#d97706"
+    if score >= 85:
+        return "A-Fit", "#16a34a"
+    if score >= 80:
+        return "Bewerben", "#16a34a"
     if score >= 70:
-        return "Sehr hoch", "#16a34a"
-    if score >= 50:
-        return "Hoch",      "#65a30d"
-    if score >= 35:
-        return "Mittel",    "#d97706"
-    return "Relevant",      "#2563eb"
+        return "Prüfen", "#d97706"
+    return "Nicht mailen", "#6b7280"
 
 
 _ACTION_STYLE = {
     "Sofort bewerben": "background:#16a34a;color:#fff;",
     "Prüfen":          "background:#d97706;color:#fff;",
     "Pruefen":         "background:#d97706;color:#fff;",
+    "Manuell prüfen":  "background:#d97706;color:#fff;",
     "Überspringen":    "background:#e5e7eb;color:#6b7280;",
     "Ueberspringen":   "background:#e5e7eb;color:#6b7280;",
 }
@@ -73,7 +76,8 @@ def _fit_reason(job: Dict) -> str:
 
 def _job_row(job: Dict) -> str:
     score                = job.get("score", 0)
-    label, score_color   = _score_meta(score)
+    manual_review        = bool(job.get("manual_review"))
+    label, score_color   = _score_meta(score, manual_review)
     source               = job.get("source", "")
     source_color         = SOURCE_COLORS.get(source, "#6b7280")
     title                = job.get("title", "")
@@ -82,7 +86,7 @@ def _job_row(job: Dict) -> str:
     url                  = job.get("url", "#")
     ai_strengths         = job.get("ai_strengths", [])
     ai_concerns          = job.get("ai_concerns", [])
-    ai_action            = job.get("ai_action", "")
+    ai_action            = "Manuell prüfen" if manual_review else job.get("ai_action", "")
     posted               = (job.get("posted_date") or "")[:10]
     context              = _job_context(job)
     fit_reason           = _fit_reason(job)
@@ -94,8 +98,15 @@ def _job_row(job: Dict) -> str:
         f'<div style="font-size:12px;color:#374151;line-height:1.45;">'
         f'<strong>Worum es geht:</strong> {context}</div>',
         f'<div style="font-size:12px;color:#374151;line-height:1.45;margin-top:3px;">'
-        f'<strong>Warum passend:</strong> {fit_reason}</div>',
+        f'<strong>Einordnung:</strong> {fit_reason}</div>',
     ]
+    if manual_review:
+        ai_parts.insert(
+            0,
+            '<div style="background:#fffbeb;color:#92400e;border-radius:5px;'
+            'padding:5px 7px;font-size:11px;font-weight:700;margin-bottom:7px;">'
+            'Explizit zur manuellen Prüfung aufgenommen.</div>',
+        )
     if ai_strengths:
         badges = "&nbsp;".join(
             f'<span style="background:#dcfce7;color:#166534;border-radius:3px;'
@@ -210,7 +221,7 @@ def build_html(jobs: List[Dict], name: str) -> str:
         &#128269; Deine Stellen-Übersicht &mdash; {today}
       </h1>
       <p style="margin:0;font-size:13px;color:#bfdbfe;">
-        <strong style="color:#fff;">{count} relevante Stelle{"n" if count != 1 else ""}</strong>
+        <strong style="color:#fff;">{count} Stelle{"n" if count != 1 else ""} zur Prüfung</strong>
         &nbsp;&middot;&nbsp; {sources_str}
       </p>
     </div>
@@ -220,10 +231,10 @@ def build_html(jobs: List[Dict], name: str) -> str:
                 margin-bottom:16px;font-size:11px;color:#6b7280;
                 border:1px solid #e5e7eb;">
       Score:&nbsp;
-      <strong style="color:#16a34a;">70–100 Sehr hoch</strong> &nbsp;|&nbsp;
-      <strong style="color:#65a30d;">50–69 Hoch</strong> &nbsp;|&nbsp;
-      <strong style="color:#d97706;">35–49 Mittel</strong> &nbsp;|&nbsp;
-      <strong style="color:#2563eb;">25–34 Relevant</strong>
+      <strong style="color:#16a34a;">85–100 A-Fit</strong> &nbsp;|&nbsp;
+      <strong style="color:#16a34a;">80–84 Bewerben</strong> &nbsp;|&nbsp;
+      <strong style="color:#d97706;">70–79 Prüfen</strong> &nbsp;|&nbsp;
+      <strong style="color:#d97706;">Manuell bestätigte Ausnahme</strong>
     </div>
 
     <!-- Tabelle -->
@@ -237,8 +248,8 @@ def build_html(jobs: List[Dict], name: str) -> str:
     <!-- Footer -->
     <p style="text-align:center;margin-top:20px;font-size:11px;color:#9ca3af;">
       Job-Search-Bot &middot; Quellen: Arbeitsagentur &middot; LinkedIn &middot; Indeed &middot; StepStone &middot; GKV-Karriereseiten<br>
-      <a href="https://github.com/cgallerhh/JobSucher/actions"
-         style="color:#93c5fd;text-decoration:none;">Workflow-Status</a>
+      <a href="https://github.com/cgallerhh/JobSucher"
+         style="color:#93c5fd;text-decoration:none;">Projektstatus</a>
     </p>
 
   </div>
@@ -288,7 +299,7 @@ def build_empty_html(name: str, diagnostics: Dict | None = None) -> str:
                 box-shadow:0 1px 4px rgba(0,0,0,0.07);border:1px solid #e5e7eb;">
       <p style="margin:0 0 12px;font-size:15px;color:#111827;">Hi {first_name},</p>
       <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.6;">
-        der tägliche GitHub-Lauf war erfolgreich. Ich zeige dir weiterhin nur Rollen,
+        der automatisierte JobSucher-Lauf war erfolgreich. Ich zeige dir weiterhin nur Rollen,
         die das aktuelle Masterprofil erfüllen: GKV/Payor, Healthcare/Public Sector
         oder senioriger Enterprise-Tech-Transfer. Hamburg/Umkreis, echte
         Deutschland-Remote-Optionen und die Firmenausschlüsse wurden berücksichtigt.
@@ -312,7 +323,7 @@ def build_empty_html(name: str, diagnostics: Dict | None = None) -> str:
             <td style="padding:4px 0;text-align:right;font-weight:700;color:#111827;">{ai_candidates}</td>
           </tr>
           <tr>
-            <td style="padding:4px 12px 4px 0;color:#374151;">Final relevante Jobs</td>
+            <td style="padding:4px 12px 4px 0;color:#374151;">Für die E-Mail ausgewählt</td>
             <td style="padding:4px 0;text-align:right;font-weight:700;color:#111827;">{final_relevant}</td>
           </tr>
         </table>
@@ -333,8 +344,8 @@ def build_empty_html(name: str, diagnostics: Dict | None = None) -> str:
 
     <p style="text-align:center;margin-top:20px;font-size:11px;color:#9ca3af;">
       Job-Search-Bot &middot; tägliche Nullmeldung aktiviert<br>
-      <a href="https://github.com/cgallerhh/JobSucher/actions"
-         style="color:#93c5fd;text-decoration:none;">Workflow-Status</a>
+      <a href="https://github.com/cgallerhh/JobSucher"
+         style="color:#93c5fd;text-decoration:none;">Projektstatus</a>
     </p>
   </div>
 </body>
@@ -342,22 +353,31 @@ def build_empty_html(name: str, diagnostics: Dict | None = None) -> str:
 
 
 def send_email(to: str, subject: str, html: str) -> None:
-    """Send HTML email via Gmail SMTP SSL (port 465)."""
-    user     = os.environ.get("GMAIL_USER", "")
-    password = os.environ.get("GMAIL_APP_PASSWORD", "")
+    """Send HTML email via SMTP SSL; Gmail variables remain compatible."""
+    host = os.environ.get("SMTP_HOST", "").strip() or "smtp.gmail.com"
+    port = int(os.environ.get("SMTP_PORT", "").strip() or "465")
+    user = (
+        os.environ.get("SMTP_USER", "").strip()
+        or os.environ.get("GMAIL_USER", "").strip()
+    )
+    password = (
+        os.environ.get("SMTP_PASSWORD", "").strip()
+        or os.environ.get("GMAIL_APP_PASSWORD", "").strip()
+    )
+    from_email = os.environ.get("SMTP_FROM_EMAIL", "").strip() or user
+    from_name = os.environ.get("SMTP_FROM_NAME", "").strip() or "Job Search Bot"
     if not user or not password:
         raise RuntimeError(
-            "GMAIL_USER and GMAIL_APP_PASSWORD must be set. "
-            "Use a Google App Password (not your regular password)."
+            "SMTP_USER/SMTP_PASSWORD or GMAIL_USER/GMAIL_APP_PASSWORD must be set."
         )
 
     msg           = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"]    = f"Job Search Bot <{user}>"
+    msg["From"]    = f"{from_name} <{from_email}>"
     msg["To"]      = to
     msg.attach(MIMEText(html, "html", "utf-8"))
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+    with smtplib.SMTP_SSL(host, port) as server:
         server.login(user, password)
-        server.sendmail(user, [to], msg.as_string())
+        server.sendmail(from_email, [to], msg.as_string())
     logger.info("Email sent to %s", to)

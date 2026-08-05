@@ -15,6 +15,8 @@ Cost estimate: ~0.02 €/day for 100 jobs (gpt-4o-mini)
 import json
 import logging
 import os
+import re
+import unicodedata
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -30,6 +32,98 @@ MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini"
 API_URL = "https://api.openai.com/v1/chat/completions"
 MAX_WORKERS = 5
 MAX_DESC_CHARS = 1500
+
+KNOWN_LOCATION_NAMES = {
+    "berlin",
+    "bremen",
+    "dortmund",
+    "dresden",
+    "dusseldorf",
+    "duesseldorf",
+    "essen",
+    "frankfurt",
+    "hamburg",
+    "hannover",
+    "koln",
+    "koeln",
+    "leipzig",
+    "munchen",
+    "muenchen",
+    "nurnberg",
+    "nuernberg",
+    "stuttgart",
+}
+
+
+def _normalise(value: str) -> str:
+    value = unicodedata.normalize("NFKD", value or "")
+    value = "".join(ch for ch in value if not unicodedata.combining(ch))
+    return re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+
+
+def _contains_unsupported_location_claim(text: str, location: str) -> bool:
+    """Erkenne erfundene Arbeitsorte, ohne allgemeine Reisehinweise zu loeschen."""
+    text_norm = _normalise(text)
+    location_norm = _normalise(location)
+    if not text_norm or not location_norm:
+        return False
+    if not any(
+        marker in text_norm
+        for marker in ("standort", "arbeitsort", "buro", "buero", "office")
+    ):
+        return False
+    mentioned = {
+        place for place in KNOWN_LOCATION_NAMES if re.search(rf"\b{place}\b", text_norm)
+    }
+    return bool(mentioned) and not any(
+        re.search(rf"\b{place}\b", location_norm) for place in mentioned
+    )
+
+
+def _action_for_score(score: int) -> str:
+    if score >= 80:
+        return "Sofort bewerben"
+    if score >= 70:
+        return "Pruefen"
+    return "Ueberspringen"
+
+
+def _normalise_ai_result(job: Dict, result: dict, score: int) -> dict:
+    """Validiere KI-Felder gegen Score und strukturierten Arbeitsort."""
+    location = job.get("location", "")
+    reason = str(result.get("reason") or "").strip()
+    if _contains_unsupported_location_claim(reason, location):
+        logger.warning(
+            "Discarding unsupported AI location claim for '%s': %s",
+            job.get("title"),
+            reason,
+        )
+        reason = "Rollenpassung anhand von Aufgaben und ausgewiesenem Arbeitsort pruefen."
+
+    def clean_items(value) -> List[str]:
+        if not isinstance(value, list):
+            return []
+        cleaned = []
+        for item in value:
+            item = str(item or "").strip()
+            if item and not _contains_unsupported_location_claim(item, location):
+                cleaned.append(item)
+            elif item:
+                logger.warning(
+                    "Discarding unsupported AI location claim for '%s': %s",
+                    job.get("title"),
+                    item,
+                )
+        return cleaned
+
+    return {
+        "ai_reason": reason,
+        "ai_strengths": clean_items(result.get("strengths")),
+        "ai_concerns": clean_items(result.get("concerns")),
+        # Die Handlungsaufforderung wird deterministisch aus dem Score erzeugt.
+        # So kann ein inkonsistentes Modellfeld nicht die E-Mail widersprechen.
+        "ai_action": _action_for_score(score),
+    }
 
 
 def _parse_json(raw: str) -> dict:
@@ -90,6 +184,10 @@ ERLAUBTE SUCHSPUREN:
 
 VERBINDLICHE GATES:
 - Standort Hamburg/Umkreis oder echte bundesweite Remote-Anstellung in Deutschland.
+- Das Feld "Standort" der Nutzernachricht ist der verbindliche Arbeitsort. Niemals aus
+  Firmensitz, Impressum oder sonstigen Ortsnamen einen anderen Arbeitsort ableiten. Einen
+  abweichenden Bueroort nur nennen, wenn die Stellenbeschreibung eine konkrete Anwesenheits-
+  pflicht dort ausdruecklich nennt.
 - Zielpaket ca. {PROFILE['salary_target']:,} EUR Fixum plus Variable plus Dienstwagen/Car
   Allowance; Untergrenze {PROFILE['salary_min']:,} EUR Fixum nur bei starkem Gesamtpaket.
 - Unbekanntes Gehalt als fruehen Pruefpunkt nennen, nicht frei schaetzen.
@@ -163,13 +261,11 @@ def _score_single(
         )
         result = _call_api(api_key, system_prompt, job_text)
         ai_score = max(0, min(100, int(result.get("score", 0))))
+        ai_fields = _normalise_ai_result(job, result, ai_score)
         return {
             **job,
             "score": ai_score,
-            "ai_reason": result.get("reason", ""),
-            "ai_strengths": result.get("strengths", []),
-            "ai_concerns": result.get("concerns", []),
-            "ai_action": result.get("action", ""),
+            **ai_fields,
         }, None
     except Exception as exc:
         return job, exc
@@ -230,7 +326,7 @@ def score_jobs_with_ai(jobs: List[Dict]) -> List[Dict]:
                 if require_ai_success:
                     result_job = {**result_job, "score": 0, "ai_action": "Ueberspringen"}
             else:
-                logger.debug(
+                logger.info(
                     "AI score %d/100 for '%s' - %s",
                     result_job["score"], result_job.get("title"), result_job.get("ai_reason"),
                 )

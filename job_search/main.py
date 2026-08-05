@@ -23,6 +23,7 @@ from .config import (
     EXTERNAL_QUERIES,
     GKV_QUERIES,
     IT_DIENSTLEISTER_QUERIES,
+    MANUAL_REVIEW_JOB_IDS,
     MIN_EMAIL_SCORE,
     MAX_JOB_AGE_DAYS,
     PROFILE,
@@ -45,7 +46,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger("job_search")
 
-SEEN_FILE = Path("data/seen_jobs.json")
+# A real local cron keeps its operational state outside the Git checkout.  The
+# default remains unchanged for GitHub Actions and manual repository runs.
+SEEN_FILE = Path(os.environ.get("JOBSUCHER_SEEN_FILE", "data/seen_jobs.json"))
 MAX_SEEN_ENTRIES = 5000  # keep file size reasonable
 MAX_AI_CANDIDATES = 60
 MAX_EMAIL_JOBS = 25
@@ -118,6 +121,35 @@ def is_fresh_job(job: dict) -> bool:
     if posted is None:
         return True
     return posted >= (datetime.now().date() - timedelta(days=MAX_JOB_AGE_DAYS))
+
+
+def email_gate(job: dict) -> tuple[bool, str]:
+    """Entscheide nach der KI, inklusive explizit bestaetigter Prueffaelle."""
+    is_manual_review = job.get("id") in MANUAL_REVIEW_JOB_IDS
+    gate_score = (
+        max(job.get("score", 0), job.get("keyword_score", 0))
+        if is_manual_review
+        else job.get("score", 0)
+    )
+    passes_gate, reason = relevance_gate(job, gate_score)
+    if not passes_gate:
+        return False, reason
+    if is_manual_review:
+        return True, "manual_review"
+    if job.get("score", 0) >= MIN_EMAIL_SCORE:
+        return True, "relevant"
+    return False, "post_ai_below_70"
+
+
+def prepare_email_job(job: dict, gate_reason: str) -> dict:
+    """Kennzeichne explizite Ausnahmen ohne der KI-Bewertung zu widersprechen."""
+    if gate_reason != "manual_review":
+        return job
+    return {
+        **job,
+        "manual_review": True,
+        "ai_action": "Manuell prüfen",
+    }
 
 
 # ── Main ─────────────────────────────────────────────────────────────────────
@@ -211,7 +243,7 @@ def main() -> None:
         s = score_job(job)
         passes_gate, reason = relevance_gate(job, s)
         if passes_gate:
-            candidates.append({**job, "score": s})
+            candidates.append({**job, "score": s, "keyword_score": s})
         else:
             rejected_by_reason[reason] += 1
             rejected_by_source[job["source"]] += 1
@@ -234,6 +266,36 @@ def main() -> None:
         candidates = candidates[:MAX_AI_CANDIDATES]
     diagnostics["ai_candidates"] = len(candidates)
 
+    # Die BA-v6-Ergebnisliste enthaelt nur Berufsbezeichnung und Homeoffice-
+    # Hinweis. Hole den Volltext nur fuer die wenigen bereits passenden BA-
+    # Kandidaten nach, damit die KI nicht auf einer irrefuehrenden Kurzfassung
+    # entscheidet.
+    detail_scraper = ArbeitsagenturScraper()
+    enriched_candidates: List[dict] = []
+    for job in candidates:
+        if job.get("source") == "Arbeitsagentur":
+            try:
+                job = detail_scraper.enrich_details(job)
+                keyword_score = score_job(job)
+                passes_gate, reason = relevance_gate(job, keyword_score)
+                if not passes_gate:
+                    rejected_by_reason[f"after_detail_{reason}"] += 1
+                    continue
+                job = {**job, "score": keyword_score, "keyword_score": keyword_score}
+            except Exception as exc:
+                logger.warning(
+                    "BA details unavailable for '%s': %s - using summary",
+                    job.get("title"), exc,
+                )
+        logger.info(
+            "Candidate pre-AI %d/100: %s @ %s",
+            job.get("score", 0), job.get("title"), job.get("company"),
+        )
+        enriched_candidates.append(job)
+    candidates = enriched_candidates
+    diagnostics["ai_candidates"] = len(candidates)
+    diagnostics["rejected_by_reason"] = dict(rejected_by_reason)
+
     # Step 2: AI re-scoring with full profile context (uses OpenAI API if key present)
     ai_scored = score_jobs_with_ai(candidates)
     diagnostics["ai_relevant"] = len(ai_scored)
@@ -242,13 +304,11 @@ def main() -> None:
     relevant: List[dict] = []
     post_ai_rejected: Counter = Counter()
     for job in ai_scored:
-        passes_gate, reason = relevance_gate(job, job["score"])
-        if passes_gate and job["score"] >= MIN_EMAIL_SCORE:
-            relevant.append(job)
-        elif passes_gate:
-            post_ai_rejected["post_ai_below_70"] += 1
+        include, reason = email_gate(job)
+        if include:
+            relevant.append(prepare_email_job(job, reason))
         else:
-            post_ai_rejected[f"post_ai_{reason}"] += 1
+            post_ai_rejected[reason] += 1
     if post_ai_rejected:
         rejected_by_reason.update(post_ai_rejected)
         diagnostics["rejected_by_reason"] = dict(rejected_by_reason)
@@ -259,12 +319,9 @@ def main() -> None:
     diagnostics["final_relevant"] = len(relevant)
     logger.info("Relevant after AI scoring: %d", len(relevant))
 
-    # Remember every job evaluated in this run, including rejected jobs. A future
-    # profile-version change deliberately clears this state for one re-evaluation.
-    mark_evaluated_jobs_seen(seen, new_jobs)
-    save_seen(seen)
-
-    # Send email, including a null-report when nothing relevant was found
+    # Send first and persist only after Gmail accepted the message. Otherwise a
+    # transient mail failure would mark jobs as seen although they were never
+    # delivered and they would silently disappear from the next run.
     recipient = os.environ.get("RECIPIENT_EMAIL", PROFILE["email"])
     if relevant:
         subject = (
@@ -272,19 +329,18 @@ def main() -> None:
             f"f\u00fcr dich | {datetime.now().strftime('%d.%m.%Y')}"
         )
         html = build_html(relevant, PROFILE["name"])
-        try:
-            send_email(to=recipient, subject=subject, html=html)
-            logger.info("Done – email with %d jobs sent to %s", len(relevant), recipient)
-        except Exception as exc:
-            logger.error("Failed to send email: %s", exc)
+        send_email(to=recipient, subject=subject, html=html)
+        logger.info("Done – email with %d jobs sent to %s", len(relevant), recipient)
     else:
         subject = f"\U0001f4ed Nullmeldung JobSucher | {datetime.now().strftime('%d.%m.%Y')}"
         html = build_empty_html(PROFILE["name"], diagnostics)
-        try:
-            send_email(to=recipient, subject=subject, html=html)
-            logger.info("Done – null report sent to %s", recipient)
-        except Exception as exc:
-            logger.error("Failed to send null report email: %s", exc)
+        send_email(to=recipient, subject=subject, html=html)
+        logger.info("Done – null report sent to %s", recipient)
+
+    # Remember every job evaluated in this run, including rejected jobs. A future
+    # profile-version change deliberately clears this state for one re-evaluation.
+    mark_evaluated_jobs_seen(seen, new_jobs)
+    save_seen(seen)
 
 
 if __name__ == "__main__":

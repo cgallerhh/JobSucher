@@ -1,5 +1,7 @@
+import base64
 import unittest
 from unittest.mock import Mock, patch
+from urllib.parse import quote
 
 from job_search.scrapers.arbeitsagentur import ArbeitsagenturScraper
 
@@ -46,6 +48,33 @@ class ArbeitsagenturV6Tests(unittest.TestCase):
         self.assertEqual(request_params["angebotsart"], "1")
         self.assertEqual(request_params["pav"], "false")
         self.assertEqual(request_params["zeitarbeit"], "false")
+
+    def test_candidate_is_enriched_with_v4_details(self):
+        response = Mock()
+        response.raise_for_status = Mock()
+        response.json.return_value = {
+            "stellenangebotsBeschreibung": (
+                "Strategische Key Accounts, komplexe SAP- und Cloud-Sales-Cycles"
+            ),
+            "homeofficeprozent": 100,
+        }
+        scraper = ArbeitsagenturScraper()
+        scraper._api_session.get = Mock(return_value=response)
+
+        result = scraper.enrich_details({
+            "id": "REF-DETAIL",
+            "title": "Senior Sales Manager SAP",
+            "location": "Hamburg, HAMBURG",
+            "description": "ERP-Berater/in",
+        })
+
+        self.assertIn("SAP- und Cloud-Sales-Cycles", result["description"])
+        self.assertIn("Remote Deutschland", result["location"])
+        self.assertTrue(result["detail_enriched"])
+        encoded_ref = quote(
+            base64.b64encode(b"REF-DETAIL").decode("ascii"), safe=""
+        )
+        self.assertIn(encoded_ref, scraper._api_session.get.call_args.args[0])
 
 
 if __name__ == "__main__":

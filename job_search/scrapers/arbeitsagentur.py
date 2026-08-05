@@ -4,9 +4,11 @@ Authentifizierung: X-API-Key Header (kein OAuth mehr).
 
 Doku: https://jobsuche.api.bund.dev
 """
+import base64
 import logging
 import time
 from typing import Dict, List
+from urllib.parse import quote
 
 from ..config import MAX_JOB_AGE_DAYS, MAX_JOBS_PER_QUERY
 from .base import BaseScraper
@@ -14,6 +16,7 @@ from .base import BaseScraper
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs"
+DETAILS_URL = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobdetails"
 API_KEY  = "jobboerse-jobsuche"
 
 
@@ -118,3 +121,33 @@ class ArbeitsagenturScraper(BaseScraper):
 
         logger.info("Arbeitsagentur: %d jobs collected", len(jobs))
         return jobs
+
+    def enrich_details(self, job: Dict) -> Dict:
+        """Ergaenze einen vorgefilterten BA-Treffer um den Volltext der v4-API."""
+        ref = (job.get("id") or "").strip()
+        if not ref:
+            return job
+
+        encoded_ref = quote(
+            base64.b64encode(ref.encode("utf-8")).decode("ascii"),
+            safe="",
+        )
+        response = self._api_session.get(
+            f"{DETAILS_URL}/{encoded_ref}",
+            timeout=20,
+        )
+        response.raise_for_status()
+        payload = response.json() or {}
+
+        enriched = dict(job)
+        description = (payload.get("stellenangebotsBeschreibung") or "").strip()
+        if description:
+            enriched["description"] = description
+
+        if payload.get("homeofficeprozent") == 100:
+            location = enriched.get("location") or "Deutschland"
+            if "remote" not in location.lower():
+                enriched["location"] = f"{location} / Remote Deutschland"
+
+        enriched["detail_enriched"] = True
+        return enriched

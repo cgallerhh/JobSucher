@@ -1,4 +1,5 @@
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -85,6 +86,60 @@ class SearchTrackTests(unittest.TestCase):
             description="Generischer Mittelstandsvertrieb",
         )
         self.assertEqual(gate(candidate), (False, "missing_search_track"))
+
+    def test_freenow_business_development_health_passes(self):
+        candidate = job(
+            title="Business Development Manager - Health",
+            company="FREENOW",
+            location="Hamburg, Germany",
+            description=(
+                "Expansion im Bereich Patiententransport für Krankenhäuser und "
+                "Arztpraxen und andere medizinische Einrichtungen; mehr als "
+                "5 Jahre Vertrieb."
+            ),
+            source="Zielunternehmen",
+        )
+        self.assertEqual(gate(candidate), (True, "relevant"))
+
+    def test_explicitly_confirmed_job_survives_low_ai_score(self):
+        from job_search.main import email_gate, prepare_email_job
+
+        candidate = job(
+            id="8016144",
+            title="Business Development Manager - Health",
+            company="FREENOW",
+            location="Hamburg, Germany",
+            description="Patiententransport für Arztpraxen und Krankenhäuser",
+            source="Zielunternehmen",
+            score=20,
+            keyword_score=35,
+        )
+        include, reason = email_gate(candidate)
+        prepared = prepare_email_job(candidate, reason)
+
+        self.assertEqual((include, reason), (True, "manual_review"))
+        self.assertTrue(prepared["manual_review"])
+        self.assertEqual(prepared["ai_action"], "Manuell prüfen")
+
+    def test_ntt_senior_sales_manager_sap_passes_from_ba_summary(self):
+        candidate = job(
+            title="NTT DATA Deutschland SE: Senior Sales Manager SAP (w/m/x)",
+            company="NTT DATA Deutschland SE",
+            location="Hamburg, HAMBURG",
+            description="ERP-Berater/in | Homeoffice moeglich; Umfang unklar",
+            source="Arbeitsagentur",
+        )
+        self.assertEqual(gate(candidate), (True, "relevant"))
+
+    def test_ntt_ai_gtm_insurance_dach_lead_passes_from_ba_summary(self):
+        candidate = job(
+            title="NTT DATA Deutschland SE: AI Go-to-Market Insurance DACH Lead (w/m/x)",
+            company="NTT DATA Deutschland SE",
+            location="Hamburg, HAMBURG",
+            description="KI-Manager/in | Homeoffice moeglich; Umfang unklar",
+            source="Arbeitsagentur",
+        )
+        self.assertEqual(gate(candidate), (True, "relevant"))
 
     def test_payor_contract_alternative_passes(self):
         candidate = job(
@@ -215,6 +270,18 @@ class SeenStateTests(unittest.TestCase):
             state = json.loads(seen_file.read_text())
             self.assertEqual(state["profile_version"], PROFILE_VERSION)
             self.assertEqual(state["job_ids"], ["new-id"])
+
+    def test_seen_file_can_live_outside_the_git_checkout(self):
+        from importlib import reload
+        from job_search import main
+
+        with tempfile.TemporaryDirectory() as tmp:
+            seen_file = Path(tmp) / "runtime" / "seen_jobs.json"
+            with patch.dict(os.environ, {"JOBSUCHER_SEEN_FILE": str(seen_file)}):
+                reloaded_main = reload(main)
+                reloaded_main.save_seen({"cron-id"})
+                self.assertEqual(reloaded_main.load_seen(), {"cron-id"})
+        reload(main)
 
 
 if __name__ == "__main__":
