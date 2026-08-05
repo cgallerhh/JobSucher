@@ -58,6 +58,22 @@ class HostedBoardTests(unittest.TestCase):
         self.assertEqual(jobs[0]["id"], "42")
         self.assertEqual(jobs[0]["description"], "Healthcare partnerships & tenders")
 
+    def test_greenhouse_entity_escaped_html_is_cleaned(self):
+        self.scraper.session.get = Mock(return_value=response({
+            "jobs": [{
+                "id": 8016144,
+                "title": "Business Development Manager - Health",
+                "location": {"name": "Hamburg, Germany"},
+                "absolute_url": "https://example.com/health",
+                "content": "&lt;p&gt;Patiententransport für Arztpraxen&lt;/p&gt;",
+                "updated_at": "2026-08-05T08:00:00Z",
+            }]
+        }))
+
+        jobs = self.scraper._from_greenhouse("FREENOW", "freenow")
+
+        self.assertEqual(jobs[0]["description"], "Patiententransport für Arztpraxen")
+
     def test_lever_annual_eur_salary_is_exposed(self):
         self.scraper.session.get = Mock(return_value=response([{
             "id": "lever-1",

@@ -157,6 +157,11 @@ HEALTH_DOMAIN_KEYWORDS = [
     "e-health",
     "digital health",
     "public healthcare",
+    "gesundheitssektor",
+    "patiententransport",
+    "medizinische einrichtung",
+    "krankenhaus",
+    "dialysezentrum",
     "telematikinfrastruktur",
 ]
 
@@ -196,6 +201,7 @@ TECH_CONTEXT_KEYWORDS = [
     "digitale transformation",
     "it-system",
     "infrastruktur",
+    "sap",
 ]
 
 ENTERPRISE_SCOPE_KEYWORDS = [
@@ -213,6 +219,7 @@ ENTERPRISE_SCOPE_KEYWORDS = [
     "complex sales",
     "large deal",
     "sales director",
+    "senior sales manager",
 ]
 
 PAYER_COMMERCIAL_KEYWORDS = [
@@ -245,6 +252,7 @@ ENTERPRISE_TECH_COMPANIES = [
     "Ashby",
     "360Learning",
     "Conceptboard",
+    "NTT DATA",
 ]
 
 REMOTE_LOCATION_KEYWORDS = [
@@ -418,7 +426,14 @@ def score_job(job: dict) -> int:
         if keyword.lower() in text:
             score += points
     for keyword, penalty in NEGATIVE_KEYWORDS.items():
-        if keyword.lower() in text:
+        # "Arzt" as a plain substring incorrectly penalises Healthcare-Sales
+        # descriptions containing "Arztpraxen". Medical job titles remain a
+        # hard exclusion; in free text this short term must be a complete word.
+        if keyword.casefold() == "arzt":
+            matched = bool(re.search(r"\barzt\b", text))
+        else:
+            matched = keyword.lower() in text
+        if matched:
             score += penalty
 
     if _company_matches(job.get("company", ""), PRIORITY_COMPANIES):
@@ -464,10 +479,20 @@ def relevance_gate(job: dict, score: int) -> tuple[bool, str]:
     has_internal_gkv_title = _contains_any(title, INTERNAL_GKV_STRATEGIC_TITLE_KEYWORDS)
 
     has_gkv = _contains_any(combined, GKV_DOMAIN_KEYWORDS)
-    has_health = _contains_any(combined, HEALTH_DOMAIN_KEYWORDS)
+    # "Health" is a common vertical label in otherwise German job ads. Keep
+    # the generic English word title-scoped so benefit text such as "health
+    # insurance" cannot turn an unrelated role into a healthcare match.
+    has_health = _contains_any(combined, HEALTH_DOMAIN_KEYWORDS) or bool(
+        re.search(r"\bhealth\b", title)
+    )
     has_public = _contains_any(combined, PUBLIC_DOMAIN_KEYWORDS)
-    has_tech = _contains_any(combined, TECH_CONTEXT_KEYWORDS)
-    has_enterprise_scope = _contains_any(combined, ENTERPRISE_SCOPE_KEYWORDS)
+    has_tech = _contains_any(combined, TECH_CONTEXT_KEYWORDS) or bool(
+        re.search(r"\bai\b", combined)
+    )
+    is_gtm_lead = "go-to-market" in title and "lead" in title
+    has_enterprise_scope = (
+        _contains_any(combined, ENTERPRISE_SCOPE_KEYWORDS) or is_gtm_lead
+    )
     has_payer_commercial = _contains_any(combined, PAYER_COMMERCIAL_KEYWORDS)
     is_priority_tech_company = _company_matches(company, ENTERPRISE_TECH_COMPANIES)
     is_gkv_employer = source == "GKV Karriere" or _company_matches(
@@ -482,7 +507,7 @@ def relevance_gate(job: dict, score: int) -> tuple[bool, str]:
         and (has_tech or is_priority_tech_company)
     )
     is_enterprise_tech_transfer = (
-        has_transfer_title
+        (has_transfer_title or is_gtm_lead)
         and has_enterprise_scope
         and (has_tech or is_priority_tech_company)
     )

@@ -7,6 +7,7 @@ Dieselbe Strategie wie GKVCareersScraper:
   3. HTML-Fallback (article/div-Cards)
 """
 import hashlib
+from html import unescape
 import json
 import logging
 import math
@@ -267,7 +268,11 @@ class ITDienstleisterScraper(BaseScraper):
         resp.raise_for_status()
         jobs: List[Dict] = []
         for posting in resp.json().get("jobs") or []:
-            content = BeautifulSoup(posting.get("content") or "", "lxml").get_text(" ", strip=True)
+            # Greenhouse sometimes returns HTML entity-escaped HTML. Unescape
+            # before parsing so scoring sees readable text instead of tags.
+            content = BeautifulSoup(
+                unescape(posting.get("content") or ""), "lxml"
+            ).get_text(" ", strip=True)
             jobs.append({
                 "id": str(posting.get("id") or hashlib.md5(posting.get("absolute_url", "").encode()).hexdigest()),
                 "title": (posting.get("title") or "").strip(),

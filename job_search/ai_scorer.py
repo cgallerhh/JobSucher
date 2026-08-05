@@ -230,7 +230,7 @@ def score_jobs_with_ai(jobs: List[Dict]) -> List[Dict]:
                 if require_ai_success:
                     result_job = {**result_job, "score": 0, "ai_action": "Ueberspringen"}
             else:
-                logger.debug(
+                logger.info(
                     "AI score %d/100 for '%s' - %s",
                     result_job["score"], result_job.get("title"), result_job.get("ai_reason"),
                 )

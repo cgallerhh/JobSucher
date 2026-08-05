@@ -6,6 +6,16 @@ Quelle: LLM-Wiki/BEWERBUNGEN, Masterdokument
 
 PROFILE_VERSION = "2026-08-03-master-v1"
 
+# Diese drei Originalanzeigen hat der Nutzer am 05.08.2026 ausdrücklich als
+# prüfenswert bestätigt. Sie werden genau einmal gemeldet, auch wenn die KI
+# wegen verkürzter Quelltexte unter 70 Punkten bleibt; der Seen-State verhindert
+# danach jede Wiederholung.
+MANUAL_REVIEW_JOB_IDS = {
+    "8016144",                         # FREENOW – BDM Health
+    "19913-3014101785362401-S",       # NTT DATA – Senior Sales Manager SAP
+    "19913-3042021785362400-S",       # NTT DATA – AI GTM Insurance DACH Lead
+}
+
 PROFILE = {
     "name": "Christian Galler",
     "email": "christian.galler@gmail.com",
@@ -133,6 +143,7 @@ PRIORITY_COMPANIES = [
     "AppZen",
     "Gartner",
     "SnapLogic",
+    "NTT DATA",
 ]
 
 # Bereits beworben: nicht erneut als neue Chance melden.
@@ -204,6 +215,7 @@ POSITIVE_KEYWORDS = {
     "eHealth": 14,
     "Public Healthcare": 16,
     "Public Sector": 16,
+    "Insurance": 8,
     "öffentlicher Sektor": 16,
     "Government": 10,
     "regulierte Branchen": 10,
@@ -286,6 +298,7 @@ POSITIVE_KEYWORDS = {
     "Camunda": 6,
     "Public Cloud Group": 6,
     "AppZen": 5,
+    "NTT DATA": 6,
 }
 
 # Rollen- und Branchenmerkmale, die den Score reduzieren. Firmenausschluesse
