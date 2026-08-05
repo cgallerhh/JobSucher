@@ -141,6 +141,17 @@ def email_gate(job: dict) -> tuple[bool, str]:
     return False, "post_ai_below_70"
 
 
+def prepare_email_job(job: dict, gate_reason: str) -> dict:
+    """Kennzeichne explizite Ausnahmen ohne der KI-Bewertung zu widersprechen."""
+    if gate_reason != "manual_review":
+        return job
+    return {
+        **job,
+        "manual_review": True,
+        "ai_action": "Manuell prüfen",
+    }
+
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -295,9 +306,7 @@ def main() -> None:
     for job in ai_scored:
         include, reason = email_gate(job)
         if include:
-            if reason == "manual_review":
-                job = {**job, "manual_review": True}
-            relevant.append(job)
+            relevant.append(prepare_email_job(job, reason))
         else:
             post_ai_rejected[reason] += 1
     if post_ai_rejected:

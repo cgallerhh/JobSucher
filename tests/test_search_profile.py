@@ -102,7 +102,7 @@ class SearchTrackTests(unittest.TestCase):
         self.assertEqual(gate(candidate), (True, "relevant"))
 
     def test_explicitly_confirmed_job_survives_low_ai_score(self):
-        from job_search.main import email_gate
+        from job_search.main import email_gate, prepare_email_job
 
         candidate = job(
             id="8016144",
@@ -114,7 +114,12 @@ class SearchTrackTests(unittest.TestCase):
             score=20,
             keyword_score=35,
         )
-        self.assertEqual(email_gate(candidate), (True, "manual_review"))
+        include, reason = email_gate(candidate)
+        prepared = prepare_email_job(candidate, reason)
+
+        self.assertEqual((include, reason), (True, "manual_review"))
+        self.assertTrue(prepared["manual_review"])
+        self.assertEqual(prepared["ai_action"], "Manuell prüfen")
 
     def test_ntt_senior_sales_manager_sap_passes_from_ba_summary(self):
         candidate = job(

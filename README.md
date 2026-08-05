@@ -34,9 +34,28 @@ Gehe zu: **Repository → Settings → Secrets and variables → Actions → New
 
 | Secret-Name | Wert |
 |---|---|
-| `GMAIL_USER` | Deine Gmail-Adresse (z. B. `christian.galler@gmail.de`) |
+| `GMAIL_USER` | Bestehende Gmail-Absenderadresse (rückwärtskompatibel) |
 | `GMAIL_APP_PASSWORD` | Das 16-stellige App-Passwort aus Schritt 1 |
 | `RECIPIENT_EMAIL` | `christian.galler+jobsucher@gmail.com` – dasselbe Gmail-Konto mit eigener Zustelladresse |
+
+Wenn Absender und Empfänger dasselbe Gmail-Konto sind, trägt eine Nachricht
+gleichzeitig die Labels `SENT` und `INBOX`. Apple Mail kann sie deshalb mit
+einer Zählblase „2“ anzeigen, obwohl Gmail nur eine Nachricht gespeichert hat.
+Das ist kein zweiter Botlauf. Für eine vollständig getrennte Zustellung wird
+ein separates Absenderkonto empfohlen:
+
+| Optionales Secret | Wert |
+|---|---|
+| `SMTP_HOST` | z. B. `smtp.gmail.com` |
+| `SMTP_PORT` | `465` für SMTP über SSL |
+| `SMTP_USER` | Login des separaten Absenderkontos |
+| `SMTP_PASSWORD` | App-Passwort des separaten Absenderkontos |
+| `SMTP_FROM_EMAIL` | sichtbare, beim Provider erlaubte Absenderadresse |
+| `SMTP_FROM_NAME` | z. B. `Job Search Bot` |
+
+Sobald `SMTP_USER` und `SMTP_PASSWORD` gesetzt sind, verwendet der Bot diese
+anstelle der bisherigen `GMAIL_*`-Werte. `RECIPIENT_EMAIL` kann dann auf die
+normale persönliche Adresse zeigen, ohne eine gesendete Eigenkopie zu erzeugen.
 
 ### 3. Echten Cron installieren
 
